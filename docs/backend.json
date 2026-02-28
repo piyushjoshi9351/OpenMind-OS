@@ -1,0 +1,547 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user profile in the OpenMind OS application. This entity stores core user information required for authentication reference and system personalization.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user, used for communication and identification.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrative privileges within the application."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt"
+      ]
+    },
+    "CognitiveProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CognitiveProfile",
+      "type": "object",
+      "description": "Stores current and aggregate cognitive metrics and insights for a user, providing a snapshot of their mental state and learning progress.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CognitiveProfile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User this cognitive profile belongs to. (Relationship: User 1:1 CognitiveProfile)"
+        },
+        "currentConsistencyScore": {
+          "type": "number",
+          "description": "The user's current consistency score, reflecting regularity in tasks and goals over time."
+        },
+        "currentBurnoutRiskIndicator": {
+          "type": "number",
+          "description": "An indicator of the user's current burnout risk level, calculated based on activity patterns."
+        },
+        "currentFocusScore": {
+          "type": "number",
+          "description": "The user's current focus score, indicating their concentration and sustained attention level."
+        },
+        "currentLearningVelocityMetric": {
+          "type": "number",
+          "description": "A metric representing the speed at which the user is acquiring new knowledge or skills."
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "description": "Timestamp when the cognitive profile metrics were last calculated or updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "currentConsistencyScore",
+        "currentBurnoutRiskIndicator",
+        "currentFocusScore",
+        "currentLearningVelocityMetric",
+        "lastUpdatedAt"
+      ]
+    },
+    "Goal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Goal",
+      "type": "object",
+      "description": "Represents a personal goal set by a user within the OpenMind OS, including its details, status, and associated metrics.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Goal entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this goal. (Relationship: User 1:N Goal)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The main title or short description of the goal."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description providing more context for the goal."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the goal (e.g., 'Career', 'Health', 'Learning', 'Personal')."
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The target date by which the goal is expected to be completed.",
+          "format": "date-time"
+        },
+        "priority": {
+          "type": "string",
+          "description": "The priority level of the goal (e.g., 'High', 'Medium', 'Low')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the goal (e.g., 'Active', 'Completed', 'Archived', 'On Hold')."
+        },
+        "completionProbability": {
+          "type": "number",
+          "description": "The predicted probability of completing the goal, calculated by the AI."
+        },
+        "skillGapScore": {
+          "type": "number",
+          "description": "A numerical score indicating the user's skill gap relative to this goal's requirements."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the goal was initially created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the goal was last modified.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "category",
+        "deadline",
+        "priority",
+        "status",
+        "createdAt"
+      ]
+    },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a specific task associated with a user's goal, tracking its progress, time, and related attributes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Task entity."
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Reference to the Goal this task belongs to. (Relationship: Goal 1:N Task)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or short description of the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description providing more context for the task."
+        },
+        "estimatedTimeMinutes": {
+          "type": "number",
+          "description": "The estimated time in minutes required to complete the task."
+        },
+        "actualTimeMinutes": {
+          "type": "number",
+          "description": "The actual time in minutes spent on the task."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the task has been completed."
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "Timestamp when the task was marked as completed.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the task was initially created.",
+          "format": "date-time"
+        },
+        "deadline": {
+          "type": "string",
+          "description": "The target date by which the task is expected to be completed.",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "description": "An array of tags associated with the task for categorization and filtering.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "description": "The priority level of the task (e.g., 'High', 'Medium', 'Low')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the task (e.g., 'Pending', 'InProgress', 'Completed', 'Overdue')."
+        },
+        "isSubtask": {
+          "type": "boolean",
+          "description": "Indicates if this task is a subtask of another task."
+        },
+        "parentId": {
+          "type": "string",
+          "description": "Reference to the parent Task if this is a subtask. (Relationship: Task 1:N Subtask)"
+        }
+      },
+      "required": [
+        "id",
+        "goalId",
+        "title",
+        "estimatedTimeMinutes",
+        "completed",
+        "createdAt"
+      ]
+    },
+    "KnowledgeNode": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "KnowledgeNode",
+      "type": "object",
+      "description": "Represents a distinct piece of knowledge in the user's personal knowledge graph, which can be a skill, topic, note, or goal.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the KnowledgeNode entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this knowledge node. (Relationship: User 1:N KnowledgeNode)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of knowledge node (e.g., 'Skill', 'Topic', 'Note', 'Goal')."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or name of the knowledge node."
+        },
+        "content": {
+          "type": "string",
+          "description": "Detailed content or description for the knowledge node."
+        },
+        "embeddingVector": {
+          "type": "array",
+          "description": "A numerical vector representation of the node's content, used for AI processing and similarity searches.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the knowledge node was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the knowledge node was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "title",
+        "createdAt"
+      ]
+    },
+    "KnowledgeEdge": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "KnowledgeEdge",
+      "type": "object",
+      "description": "Represents a directed relationship or connection between two KnowledgeNodes, forming the structure of the user's knowledge graph.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the KnowledgeEdge entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this knowledge edge. (Relationship: User 1:N KnowledgeEdge)"
+        },
+        "sourceNodeId": {
+          "type": "string",
+          "description": "Reference to the source KnowledgeNode of this edge. (Relationship: KnowledgeNode 1:N KnowledgeEdge)"
+        },
+        "targetNodeId": {
+          "type": "string",
+          "description": "Reference to the target KnowledgeNode of this edge. (Relationship: KnowledgeNode 1:N KnowledgeEdge)"
+        },
+        "relationType": {
+          "type": "string",
+          "description": "The type of relationship between the source and target nodes (e.g., 'related_to', 'prerequisite_for', 'depends_on')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the knowledge edge was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "sourceNodeId",
+        "targetNodeId",
+        "relationType",
+        "createdAt"
+      ]
+    },
+    "BehaviorMetric": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BehaviorMetric",
+      "type": "object",
+      "description": "Stores historical snapshots of user behavior and cognitive performance metrics over time, enabling trend analysis and insights.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the BehaviorMetric entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User these metrics belong to. (Relationship: User 1:N BehaviorMetric)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The specific date and time when these metrics were recorded or calculated.",
+          "format": "date-time"
+        },
+        "consistencyScore": {
+          "type": "number",
+          "description": "The user's consistency score at this specific timestamp."
+        },
+        "delayRatio": {
+          "type": "number",
+          "description": "The ratio of delayed tasks relative to completed tasks at this timestamp."
+        },
+        "burnoutRiskIndicator": {
+          "type": "number",
+          "description": "The burnout risk indicator calculated for the user at this timestamp."
+        },
+        "focusScore": {
+          "type": "number",
+          "description": "The focus score recorded for the user at this timestamp."
+        },
+        "learningVelocity": {
+          "type": "number",
+          "description": "The learning velocity metric for the user at this timestamp."
+        },
+        "productivityScore": {
+          "type": "number",
+          "description": "An overall productivity score for the period leading up to this timestamp."
+        },
+        "taskCompletionRate": {
+          "type": "number",
+          "description": "The rate of task completion for the period leading up to this timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "timestamp",
+        "consistencyScore",
+        "delayRatio",
+        "burnoutRiskIndicator",
+        "focusScore",
+        "learningVelocity"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles and their core metadata. Document ID is the Firebase Auth UID. Includes an 'isAdmin' field for basic role-based access control, typically checked against the authenticated user's own document.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/cognitiveProfile/current",
+        "definition": {
+          "entityName": "CognitiveProfile",
+          "schema": {
+            "$ref": "#/backend/entities/CognitiveProfile"
+          },
+          "description": "Stores the current calculated cognitive profile metrics for a specific user. Document ID is fixed as 'current'. Includes denormalized 'userId' for robust authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/goals/{goalId}",
+        "definition": {
+          "entityName": "Goal",
+          "schema": {
+            "$ref": "#/backend/entities/Goal"
+          },
+          "description": "Stores individual goals created by a user. Document ID is 'goalId'. Includes denormalized 'userId' for authorization independence, simplifying security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the goal."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for a specific goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/goals/{goalId}/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tasks associated with a specific goal. Document ID is 'taskId'. Includes denormalized 'userId' (of the goal owner) and 'goalId' for authorization independence and efficient rule writing without requiring parent document reads.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the goal and task."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier of the goal to which this task belongs."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier for a specific task."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/knowledgeNodes/{nodeId}",
+        "definition": {
+          "entityName": "KnowledgeNode",
+          "schema": {
+            "$ref": "#/backend/entities/KnowledgeNode"
+          },
+          "description": "Stores individual knowledge nodes (skills, topics, notes) created by a user. Document ID is 'nodeId'. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the knowledge node."
+            },
+            {
+              "name": "nodeId",
+              "description": "The unique identifier for a specific knowledge node."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/knowledgeEdges/{edgeId}",
+        "definition": {
+          "entityName": "KnowledgeEdge",
+          "schema": {
+            "$ref": "#/backend/entities/KnowledgeEdge"
+          },
+          "description": "Stores relationships between knowledge nodes created by a user. Document ID is 'edgeId'. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the knowledge edge."
+            },
+            {
+              "name": "edgeId",
+              "description": "The unique identifier for a specific knowledge edge."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/behaviorMetrics/{metricId}",
+        "definition": {
+          "entityName": "BehaviorMetric",
+          "schema": {
+            "$ref": "#/backend/entities/BehaviorMetric"
+          },
+          "description": "Stores historical snapshots of user behavior and cognitive performance metrics. Document ID is 'metricId'. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user whose behavior metrics are being recorded."
+            },
+            {
+              "name": "metricId",
+              "description": "The unique identifier for a specific behavior metric snapshot."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admins/{adminUid}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores documents for users with administrative privileges. Document ID is the Firebase Auth UID of the admin. The existence of a document in this collection grants admin access, facilitating robust, existence-based DBAC for global roles. This avoids fetching 'isAdmin' from a user's profile for every admin check, improving security rule performance and debuggability. While the schema points to User, an actual 'AdminRole' document might be simpler, only containing a placeholder.",
+          "params": [
+            {
+              "name": "adminUid",
+              "description": "The Firebase Auth UID of a user granted administrative privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore data structure for OpenMind OS adheres strictly to the core design principles: Authorization Independence, Structural Segregation, and Access Modeling, ensuring a secure, scalable, and debuggable backend.\n\n**Authorization Independence via Denormalization:**\nThis is a critical aspect of the design. For every subcollection, any authorization context that would typically be inherited from a parent document (like `userId`) is explicitly denormalized and stored within each document of the subcollection. For example, a `Task` document, nested under a `Goal` which is itself under a `User` (path: `/users/{userId}/goals/{goalId}/tasks/{taskId}`), will contain both its direct `goalId` and the `userId` of its owner. This eliminates the need for `get()` calls in security rules to check parent documents for ownership or membership, thus enabling atomic operations and simplifying rule logic significantly. Rules can directly check `resource.data.userId == request.auth.uid` or `resource.data.goalId == goalId` without needing to fetch additional documents, which would otherwise break transactional integrity and complicate debugging.\n\n**Structural Segregation (Homogeneous Security Posture):**\nAll user-specific data is segregated under `/users/{userId}/...`. This ensures that all documents within a given collection (e.g., `/users/{userId}/goals`) share the same security requirements – they are private to the `userId` specified in the path. This simplifies security rules immensely, as there's no need to differentiate access based on document content within a single collection. Public and private data (though not explicitly required here, if it were) would reside in entirely separate top-level collections.\n\n**Access Modeling and QAPs (Queries as Permitted):**\n1.  **Private Data & Hierarchical Paths:** All personal data is stored under the user's specific path, `/users/{userId}/...`. This 'Path-Based ownership' makes authorization incredibly straightforward. For example, to access goals, the path is `/users/{userId}/goals/{goalId}`, where `userId` must match `request.auth.uid`. This pattern is consistently applied to `CognitiveProfile`, `Goals`, `Tasks`, `KnowledgeNodes`, `KnowledgeEdges`, and `BehaviorMetrics`.\n2.  **Continue Hierarchy for Nested Data:** The structure naturally extends this for nested data like `Tasks` within `Goals` (`/users/{userId}/goals/{goalId}/tasks/{taskId}`), maintaining a clear ownership chain and making `list` operations secure by default.\n3.  **Global Roles (DBAC - Existence over Content):** For administrative roles, a dedicated top-level collection, `/roles_admins/{adminUid}`, is used. The mere existence of a document with `request.auth.uid` as its ID in this collection grants admin privileges. This is the most secure and performant way to implement role-based access control without relying on custom claims or fetching an admin flag from potentially large user documents, directly supporting 'Existence over Content' and preventing expensive filtering.\n\nBy implementing these strategies, `list` queries for user-owned data become inherently secure. A query to `/users/{request.auth.uid}/goals` automatically restricts results to the authenticated user's goals, satisfying the QAP principle (queries only return data the user is explicitly permitted to access). The design ensures that security rules are explicit, easy to write (e.g., `allow read, write: if request.auth.uid == userId;`), and performant, avoiding security pitfalls and simplifying future audits and debugging."
+  }
+}

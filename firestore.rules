@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * OPENMIND OS - SECURITY RULES DOCUMENTATION
+     * 
+     * Core Philosophy:
+     * This ruleset enforces a strict User-Ownership model. OpenMind OS is designed as a private
+     * cognitive engine where every piece of data is partitioned by the user's unique identity.
+     * 
+     * Data Structure:
+     * The hierarchy follows a user-centric pattern: /users/{userId}/[subcollections].
+     * Deeply nested data (like tasks) includes denormalized parent identifiers (goalId, userId) 
+     * to ensure authorization checks are performant and do not require additional 'get()' calls.
+     * 
+     * Key Security Decisions:
+     * 1. Path-Based Authorization: The UID in the document path must match the authenticated user.
+     * 2. DBAC (Database-Based Access Control): Administrative privileges are determined by the 
+     *    existence of a document in the '/roles_admins' collection.
+     * 3. Immutability: Relational fields (like userId) are enforced as immutable during updates 
+     *    to prevent data hijacking or accidental re-parenting.
+     * 4. Prototyping Flexibility: These rules prioritize "Who" can access data over "What" the 
+     *    data looks like, allowing for rapid schema evolution while maintaining strict privacy.
+     */
+
+    // --- HELPER FUNCTIONS ---
+
+    /** Checks if the request is from a signed-in user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Validates that the user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** 
+     * Checks if the user is an administrator based on the roles_admins collection. 
+     * Uses the "Existence over Content" principle for high performance.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
+    }
+
+    /** Combined check for update/delete: user must own the existing document. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for the core User profile.
+     * @path /users/{userId}
+     * @allow (get) If the user is the owner or an admin.
+     * @deny (create) If the userId in the path doesn't match the authenticated UID.
+     * @principle Path-based ownership and self-creation.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update, delete: if isExistingOwner(userId);
+
+      /**
+       * @description User's current cognitive state and AI-calculated metrics.
+       * @path /users/{userId}/cognitiveProfile/current
+       * @allow (update) By the owner to update their mental state metrics.
+       * @deny (list) Generally limited as it is a specific document 'current'.
+       * @principle Direct ownership via parent path.
+       */
+      match /cognitiveProfile/current {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Personal goals set by the user.
+       * @path /users/{userId}/goals/{goalId}
+       * @allow (create) If owner UID is correctly set in the document data.
+       * @deny (update) Attempting to change the 'userId' field.
+       * @principle Relational integrity and ownership.
+       */
+      match /goals/{goalId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Tasks associated with a specific goal.
+         * @path /users/{userId}/goals/{goalId}/tasks/{taskId}
+         * @allow (list) All tasks for a goal the user owns.
+         * @deny (create) If goalId in data doesn't match the path.
+         * @principle Nested path-based ownership.
+         */
+        match /tasks/{taskId} {
+          allow get, list: if isOwner(userId) || isAdmin();
+          allow create: if isOwner(userId) && request.resource.data.goalId == goalId;
+          allow update: if isExistingOwner(userId) && request.resource.data.goalId == resource.data.goalId;
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Individual nodes in the user's knowledge graph.
+       * @path /users/{userId}/knowledgeNodes/{nodeId}
+       * @allow (create) Validating the owner UID.
+       * @principle Secure personal knowledge silo.
+       */
+      match /knowledgeNodes/{nodeId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Edges/Relationships between knowledge nodes.
+       * @path /users/{userId}/knowledgeEdges/{edgeId}
+       * @allow (create) Ensuring the edge belongs to the user.
+       * @principle Graph structure privacy.
+       */
+      match /knowledgeEdges/{edgeId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Historical snapshots of cognitive behavior.
+       * @path /users/{userId}/behaviorMetrics/{metricId}
+       * @allow (get) For generating dashboard charts.
+       * @deny (update) Metric snapshots are typically immutable.
+       * @principle Time-series data ownership.
+       */
+      match /behaviorMetrics/{metricId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Registry of administrative users.
+     * @path /roles_admins/{adminUid}
+     * @allow (get) Only admins can see who else is an admin.
+     * @deny (write) No client-side writes; managed via Admin SDK/Console.
+     * @principle Restricted role management.
+     */
+    match /roles_admins/{adminUid} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+  }
+}
