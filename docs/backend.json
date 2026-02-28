@@ -4,49 +4,65 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user's profile information within the OpenMind OS application. Authentication details are handled externally by Firebase.",
+      "description": "Represents a user's profile information within the application. Authentication details are managed externally by Firebase.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the UserProfile entity."
         },
+        "firebaseAuthId": {
+          "type": "string",
+          "description": "Unique ID from the external Firebase Authentication system."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
         "email": {
           "type": "string",
-          "description": "The user's email address.",
+          "description": "User's email address.",
           "format": "email"
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's preferred display name."
-        },
-        "photoUrl": {
-          "type": "string",
-          "description": "URL to the user's profile picture.",
-          "format": "uri"
         },
         "createdAt": {
           "type": "string",
           "description": "Timestamp when the user profile was created.",
           "format": "date-time"
         },
-        "lastLoginAt": {
+        "updatedAt": {
           "type": "string",
-          "description": "Timestamp of the user's last login.",
+          "description": "Timestamp when the user profile was last updated.",
           "format": "date-time"
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "description": "User's preferred language (e.g., \"en-US\")."
+        },
+        "timezone": {
+          "type": "string",
+          "description": "User's geographical timezone (e.g., \"America/New_York\")."
+        },
+        "darkModeEnabled": {
+          "type": "boolean",
+          "description": "User's preference for dark mode UI."
         }
       },
       "required": [
         "id",
+        "firebaseAuthId",
         "email",
-        "displayName",
-        "createdAt"
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Goal": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Goal",
       "type": "object",
-      "description": "Represents a user's personal goal, including its status, category, and deadlines.",
+      "description": "Represents a personal goal set by a user, including details like deadlines, categories, and progress.",
       "properties": {
         "id": {
           "type": "string",
@@ -54,7 +70,7 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile who owns this goal. (Relationship: UserProfile 1:N Goal)"
+          "description": "Reference to the UserProfile entity who owns this goal. (Relationship: UserProfile 1:N Goal)"
         },
         "title": {
           "type": "string",
@@ -66,20 +82,20 @@
         },
         "deadline": {
           "type": "string",
-          "description": "The target date by which the goal is expected to be completed.",
-          "format": "date-time"
+          "description": "The target date for completing the goal.",
+          "format": "date"
         },
         "category": {
           "type": "string",
-          "description": "The category the goal belongs to (e.g., 'Career', 'Health', 'Learning')."
+          "description": "A category for the goal (e.g., \"Career\", \"Health\", \"Learning\")."
         },
         "priority": {
           "type": "string",
-          "description": "The priority level of the goal (e.g., 'Low', 'Medium', 'High', 'Critical')."
+          "description": "The priority level of the goal (e.g., \"Low\", \"Medium\", \"High\")."
         },
         "status": {
           "type": "string",
-          "description": "The current status of the goal (e.g., 'NotStarted', 'InProgress', 'Completed', 'OnHold', 'Archived')."
+          "description": "The current status of the goal (e.g., \"ToDo\", \"InProgress\", \"Completed\", \"Archived\")."
         },
         "createdAt": {
           "type": "string",
@@ -88,42 +104,44 @@
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp of the last update to the goal.",
+          "description": "Timestamp when the goal was last updated.",
           "format": "date-time"
         },
-        "completedAt": {
+        "completionDate": {
           "type": "string",
-          "description": "Timestamp when the goal was marked as completed (optional).",
-          "format": "date-time"
+          "description": "The actual date when the goal was marked as completed.",
+          "format": "date"
         }
       },
       "required": [
         "id",
         "userId",
         "title",
+        "deadline",
         "category",
         "priority",
         "status",
-        "createdAt"
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Task": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Task",
       "type": "object",
-      "description": "Represents a single task associated with a goal, including tracking of time and completion.",
+      "description": "Represents a specific task associated with a user's goal, including time tracking and completion status.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Task entity."
         },
-        "goalId": {
-          "type": "string",
-          "description": "Reference to the Goal this task belongs to. (Relationship: Goal 1:N Task)"
-        },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile who owns this task. (Relationship: UserProfile 1:N Task)"
+          "description": "Reference to the UserProfile entity who owns this task. (Relationship: UserProfile 1:N Task)"
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Reference to the Goal entity this task belongs to. (Relationship: Goal 1:N Task)"
         },
         "title": {
           "type": "string",
@@ -133,13 +151,13 @@
           "type": "string",
           "description": "A detailed description of the task."
         },
-        "estimatedTime": {
+        "estimatedTimeMinutes": {
           "type": "number",
-          "description": "Estimated time required to complete the task, in minutes."
+          "description": "The estimated time in minutes to complete the task."
         },
-        "actualTimeSpent": {
+        "actualTimeMinutes": {
           "type": "number",
-          "description": "Actual time spent on the task, in minutes."
+          "description": "The actual time in minutes spent on the task."
         },
         "isCompleted": {
           "type": "boolean",
@@ -147,20 +165,13 @@
         },
         "deadline": {
           "type": "string",
-          "description": "The target date/time by which the task should be completed.",
-          "format": "date-time"
+          "description": "The target date for completing the task.",
+          "format": "date"
         },
         "completedAt": {
           "type": "string",
-          "description": "Timestamp when the task was marked as completed (optional).",
+          "description": "Timestamp when the task was marked as completed.",
           "format": "date-time"
-        },
-        "tagIds": {
-          "type": "array",
-          "description": "References to Tag entities associated with this task. (Relationship: Task N:N Tag)",
-          "items": {
-            "type": "string"
-          }
         },
         "createdAt": {
           "type": "string",
@@ -169,36 +180,46 @@
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp of the last update to the task.",
+          "description": "Timestamp when the task was last updated.",
           "format": "date-time"
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tag entities associated with this task. (Relationship: Task N:N Tag)",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
         "id",
-        "goalId",
         "userId",
+        "goalId",
         "title",
+        "estimatedTimeMinutes",
         "isCompleted",
-        "createdAt"
+        "deadline",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "Tag": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Tag",
       "type": "object",
-      "description": "Represents a user-defined tag that can be applied to tasks or knowledge nodes for categorization and filtering.",
+      "description": "Represents a reusable tag that can be applied to tasks and knowledge nodes for categorization and filtering.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the Tag entity."
         },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who created this tag. (Relationship: UserProfile 1:N Tag)"
-        },
         "name": {
           "type": "string",
-          "description": "The name of the tag (e.g., 'Frontend', 'Research', 'Urgent')."
+          "description": "The name of the tag (e.g., \"Frontend\", \"AI\", \"Workout\")."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity who created this tag. (Relationship: UserProfile 1:N Tag)"
         },
         "createdAt": {
           "type": "string",
@@ -217,7 +238,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "KnowledgeNode",
       "type": "object",
-      "description": "Represents a single node in the user's personal knowledge graph, which can be a skill, topic, goal, or note.",
+      "description": "Represents a node in the user's personal knowledge graph, which can be a skill, topic, goal, or note.",
       "properties": {
         "id": {
           "type": "string",
@@ -225,19 +246,19 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile who owns this knowledge node. (Relationship: UserProfile 1:N KnowledgeNode)"
+          "description": "Reference to the UserProfile entity who owns this knowledge node. (Relationship: UserProfile 1:N KnowledgeNode)"
         },
         "type": {
           "type": "string",
-          "description": "The type of knowledge node (e.g., 'Skill', 'Topic', 'Goal', 'Note')."
+          "description": "The type of knowledge node (e.g., \"Skill\", \"Topic\", \"Goal\", \"Note\")."
         },
         "title": {
           "type": "string",
-          "description": "The title or name of the knowledge node."
+          "description": "A concise title or name for the knowledge node."
         },
         "content": {
           "type": "string",
-          "description": "Detailed content or description for the node (e.g., skill description, note text)."
+          "description": "The detailed content or description for the knowledge node."
         },
         "createdAt": {
           "type": "string",
@@ -246,15 +267,23 @@
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp of the last update to the knowledge node.",
+          "description": "Timestamp when the knowledge node was last updated.",
           "format": "date-time"
         },
-        "embedding": {
+        "tagIds": {
           "type": "array",
-          "description": "Placeholder for the AI embedding vector of this node's content, for future ML integration.",
+          "description": "References to Tag entities associated with this knowledge node. (Relationship: KnowledgeNode N:N Tag)",
           "items": {
-            "type": "number"
+            "type": "string"
           }
+        },
+        "referencedGoalId": {
+          "type": "string",
+          "description": "Optional reference to a specific Goal entity if this node represents a goal. (Relationship: KnowledgeNode 1:1 Goal)"
+        },
+        "referencedSkillId": {
+          "type": "string",
+          "description": "Optional reference to a specific Skill entity if this node represents a skill. (Relationship: KnowledgeNode 1:1 Skill)"
         }
       },
       "required": [
@@ -262,14 +291,16 @@
         "userId",
         "type",
         "title",
-        "createdAt"
+        "content",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "KnowledgeEdge": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "KnowledgeEdge",
       "type": "object",
-      "description": "Represents a directional relationship between two KnowledgeNode entities in the user's personal knowledge graph.",
+      "description": "Represents a directed relationship between two KnowledgeNode entities in the user's personal knowledge graph.",
       "properties": {
         "id": {
           "type": "string",
@@ -277,23 +308,19 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile who owns this knowledge edge. (Relationship: UserProfile 1:N KnowledgeEdge)"
+          "description": "Reference to the UserProfile entity who owns this knowledge edge. (Relationship: UserProfile 1:N KnowledgeEdge)"
         },
         "sourceNodeId": {
           "type": "string",
-          "description": "Reference to the ID of the source KnowledgeNode. (Relationship: KnowledgeNode N:N KnowledgeNode via KnowledgeEdge)"
+          "description": "Reference to the source KnowledgeNode entity. (Relationship: KnowledgeNode 1:N KnowledgeEdge)"
         },
         "targetNodeId": {
           "type": "string",
-          "description": "Reference to the ID of the target KnowledgeNode."
+          "description": "Reference to the target KnowledgeNode entity. (Relationship: KnowledgeNode 1:N KnowledgeEdge)"
         },
-        "type": {
+        "relationshipType": {
           "type": "string",
-          "description": "The type of relationship (e.g., 'RelatesTo', 'IsPrerequisiteFor', 'ExpandsOn', 'Achieves')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A descriptive text for the nature of the relationship."
+          "description": "Describes the nature of the relationship (e.g., \"PrerequisiteFor\", \"RelatedTo\", \"IsPartOf\", \"Explains\")."
         },
         "createdAt": {
           "type": "string",
@@ -306,63 +333,103 @@
         "userId",
         "sourceNodeId",
         "targetNodeId",
-        "type",
+        "relationshipType",
         "createdAt"
       ]
     },
-    "AnalyticsMetric": {
+    "Skill": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AnalyticsMetric",
+      "title": "Skill",
       "type": "object",
-      "description": "Stores various analytical metrics and insights related to user productivity, goals, and tasks.",
+      "description": "Defines a specific skill concept that users can learn, track, and associate with goals or knowledge.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the AnalyticsMetric entity."
+          "description": "Unique identifier for the Skill entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the skill (e.g., \"JavaScript\", \"Public Speaking\", \"Data Modeling\")."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of what the skill entails."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the skill definition was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the skill definition was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserSkill": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSkill",
+      "type": "object",
+      "description": "Represents a user's proficiency and status regarding a specific skill, forming a join entity between UserProfile and Skill.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserSkill entity."
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile this metric belongs to. (Relationship: UserProfile 1:N AnalyticsMetric)"
+          "description": "Reference to the UserProfile entity. (Relationship: UserProfile 1:N UserSkill)"
         },
-        "metricName": {
+        "skillId": {
           "type": "string",
-          "description": "The name of the metric (e.g., 'TaskCompletionRate', 'ProductivityScore', 'ConsistencyStreak', 'BurnoutRisk')."
+          "description": "Reference to the Skill entity. (Relationship: Skill 1:N UserSkill)"
         },
-        "value": {
+        "level": {
           "type": "number",
-          "description": "The numerical value of the metric."
+          "description": "The user's assessed proficiency level for this skill (e.g., 1-5, or a custom scale)."
         },
-        "timestamp": {
+        "lastAssessedAt": {
           "type": "string",
-          "description": "Timestamp when the metric was recorded or calculated.",
+          "description": "Timestamp of the last assessment or update of this skill's level.",
           "format": "date-time"
         },
-        "period": {
-          "type": "string",
-          "description": "The time period this metric applies to (e.g., 'daily', 'weekly', 'monthly', 'overall')."
+        "isLearning": {
+          "type": "boolean",
+          "description": "Indicates if the user is currently actively learning or developing this skill."
         },
-        "goalId": {
+        "createdAt": {
           "type": "string",
-          "description": "Optional reference to a specific Goal if the metric is goal-specific. (Relationship: Goal 1:N AnalyticsMetric)"
+          "description": "Timestamp when the user's association with this skill was first recorded.",
+          "format": "date-time"
         },
-        "taskId": {
+        "updatedAt": {
           "type": "string",
-          "description": "Optional reference to a specific Task if the metric is task-specific. (Relationship: Task 1:N AnalyticsMetric)"
+          "description": "Timestamp when the user's skill record was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
         "userId",
-        "metricName",
-        "value",
-        "timestamp"
+        "skillId",
+        "level",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "LearningRoadmap": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LearningRoadmap",
       "type": "object",
-      "description": "Represents an AI-generated personalized learning roadmap for a user to achieve a target role.",
+      "description": "Represents a personalized learning plan generated for a user, outlining steps to achieve a target role or skill set.",
       "properties": {
         "id": {
           "type": "string",
@@ -370,19 +437,33 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to the UserProfile who owns this learning roadmap. (Relationship: UserProfile 1:N LearningRoadmap)"
+          "description": "Reference to the UserProfile entity who owns this roadmap. (Relationship: UserProfile 1:N LearningRoadmap)"
         },
         "targetRole": {
           "type": "string",
-          "description": "The target job role for which the roadmap was generated (e.g., 'AI Engineer')."
+          "description": "The target role or objective for which the roadmap was generated (e.g., \"AI Engineer\")."
         },
         "timelineMonths": {
           "type": "number",
-          "description": "The desired timeline in months for completing the roadmap."
+          "description": "The planned duration of the roadmap in months."
         },
         "generatedAt": {
           "type": "string",
-          "description": "Timestamp when the learning roadmap was generated.",
+          "description": "Timestamp when the roadmap was initially generated.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the roadmap (e.g., \"Generated\", \"InProgress\", \"Completed\", \"Archived\")."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the roadmap record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the roadmap record was last updated.",
           "format": "date-time"
         }
       },
@@ -391,75 +472,155 @@
         "userId",
         "targetRole",
         "timelineMonths",
-        "generatedAt"
+        "generatedAt",
+        "status",
+        "createdAt",
+        "updatedAt"
       ]
     },
     "RoadmapStep": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "RoadmapStep",
       "type": "object",
-      "description": "Represents a single step within a generated LearningRoadmap, outlining specific learning objectives and resources.",
+      "description": "Represents an individual step or milestone within a LearningRoadmap, often corresponding to a weekly breakdown.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the RoadmapStep entity."
         },
-        "learningRoadmapId": {
+        "roadmapId": {
           "type": "string",
-          "description": "Reference to the LearningRoadmap this step belongs to. (Relationship: LearningRoadmap 1:N RoadmapStep)"
-        },
-        "order": {
-          "type": "number",
-          "description": "The sequential order of this step within its learning roadmap."
+          "description": "Reference to the LearningRoadmap entity this step belongs to. (Relationship: LearningRoadmap 1:N RoadmapStep)"
         },
         "title": {
           "type": "string",
-          "description": "A concise title for the roadmap step (e.g., 'Learn Python Fundamentals')."
+          "description": "A concise title for the roadmap step (e.g., \"Week 1: Foundations of Python\")."
         },
         "description": {
           "type": "string",
           "description": "A detailed description of the objectives and content for this step."
         },
-        "estimatedDurationWeeks": {
+        "startDate": {
+          "type": "string",
+          "description": "The planned start date for this roadmap step.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The planned end date for this roadmap step.",
+          "format": "date"
+        },
+        "order": {
           "type": "number",
-          "description": "The estimated duration in weeks to complete this step."
+          "description": "The sequential order of this step within its roadmap."
         },
-        "skillIds": {
+        "associatedSkillIds": {
           "type": "array",
-          "description": "References to KnowledgeNode IDs representing skills required or covered by this step. (Relationship: RoadmapStep N:N KnowledgeNode)",
+          "description": "References to Skill entities that this step aims to develop. (Relationship: RoadmapStep N:N Skill)",
           "items": {
             "type": "string"
           }
         },
-        "suggestedTaskIds": {
+        "suggestedTaskDescriptions": {
           "type": "array",
-          "description": "References to Task IDs representing suggested tasks to complete this step. (Relationship: RoadmapStep N:N Task)",
+          "description": "A list of textual descriptions for suggested daily tasks within this step.",
           "items": {
             "type": "string"
           }
         },
-        "status": {
-          "type": "string",
-          "description": "The current status of this roadmap step (e.g., 'NotStarted', 'InProgress', 'Completed', 'Skipped')."
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Indicates if this roadmap step has been completed."
         },
-        "startedAt": {
+        "createdAt": {
           "type": "string",
-          "description": "Timestamp when the step was started (optional).",
+          "description": "Timestamp when the roadmap step was created.",
           "format": "date-time"
         },
-        "completedAt": {
+        "updatedAt": {
           "type": "string",
-          "description": "Timestamp when the step was completed (optional).",
+          "description": "Timestamp when the roadmap step was last updated.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
-        "learningRoadmapId",
-        "order",
+        "roadmapId",
         "title",
-        "estimatedDurationWeeks",
-        "status"
+        "description",
+        "startDate",
+        "endDate",
+        "order",
+        "isCompleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserMetricSnapshot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserMetricSnapshot",
+      "type": "object",
+      "description": "Stores periodic snapshot of aggregated user performance and cognitive metrics for analytics and insights.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserMetricSnapshot entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity this snapshot belongs to. (Relationship: UserProfile 1:N UserMetricSnapshot)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The specific date for which these metrics were calculated/recorded.",
+          "format": "date"
+        },
+        "productivityScore": {
+          "type": "number",
+          "description": "A calculated score reflecting user productivity."
+        },
+        "consistencyStreakDays": {
+          "type": "number",
+          "description": "The number of consecutive days of consistent activity."
+        },
+        "taskCompletionRate": {
+          "type": "number",
+          "description": "The percentage of tasks completed within the period."
+        },
+        "delayRatio": {
+          "type": "number",
+          "description": "The ratio of delayed tasks to total tasks."
+        },
+        "burnoutRiskIndicator": {
+          "type": "number",
+          "description": "An indicator score for potential burnout risk."
+        },
+        "focusScore": {
+          "type": "number",
+          "description": "A calculated score reflecting user's focus."
+        },
+        "learningVelocity": {
+          "type": "number",
+          "description": "A metric indicating the rate of learning progress."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when this metric snapshot was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "productivityScore",
+        "consistencyStreakDays",
+        "taskCompletionRate",
+        "delayRatio",
+        "burnoutRiskIndicator",
+        "focusScore",
+        "learningVelocity",
+        "createdAt"
       ]
     }
   },
@@ -478,7 +639,7 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information, uniquely identified by the Firebase Authentication UID. Owned by the user themselves."
+          "description": "Stores individual user profile information. The document ID ({userId}) must match `request.auth.uid` for secure access. All subsequent user-specific data will be nested under this path."
         }
       },
       {
@@ -488,7 +649,17 @@
           "schema": {
             "$ref": "#/backend/entities/Goal"
           },
-          "description": "Stores user-specific personal goals. Each document includes a denormalized 'userId' for authorization independence, ensuring ownership by the authenticated user."
+          "description": "Personal goals for a user. Each goal document includes `userId` for authorization independence, ensuring only the owning user can access it.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the goal."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier for the specific goal."
+            }
+          ]
         }
       },
       {
@@ -498,7 +669,21 @@
           "schema": {
             "$ref": "#/backend/entities/Task"
           },
-          "description": "Stores tasks belonging to a specific goal and owned by the user. Each document includes denormalized 'userId' and 'goalId' for authorization independence, enabling robust security rules."
+          "description": "Tasks associated with a specific goal, owned by the user. The `userId` from the parent goal is denormalized into each task document for authorization independence, eliminating `get()` calls in rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the task and its parent goal."
+            },
+            {
+              "name": "goalId",
+              "description": "The unique identifier of the parent goal."
+            },
+            {
+              "name": "taskId",
+              "description": "The unique identifier for the specific task."
+            }
+          ]
         }
       },
       {
@@ -508,7 +693,17 @@
           "schema": {
             "$ref": "#/backend/entities/Tag"
           },
-          "description": "Stores user-defined tags for categorizing tasks and knowledge nodes. Each document includes a denormalized 'userId' for authorization independence."
+          "description": "User-defined tags for organizing tasks and knowledge nodes. Each tag document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who created and owns the tag."
+            },
+            {
+              "name": "tagId",
+              "description": "The unique identifier for the specific tag."
+            }
+          ]
         }
       },
       {
@@ -518,7 +713,17 @@
           "schema": {
             "$ref": "#/backend/entities/KnowledgeNode"
           },
-          "description": "Stores individual knowledge nodes (skills, topics, goals, notes) within a user's personal knowledge graph. Includes a denormalized 'userId' for authorization independence and supports future AI embeddings."
+          "description": "Nodes in the user's personal knowledge graph. Each node document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the knowledge node."
+            },
+            {
+              "name": "nodeId",
+              "description": "The unique identifier for the specific knowledge node."
+            }
+          ]
         }
       },
       {
@@ -528,17 +733,53 @@
           "schema": {
             "$ref": "#/backend/entities/KnowledgeEdge"
           },
-          "description": "Stores directional relationships between a user's KnowledgeNode entities. Includes a denormalized 'userId' for authorization independence."
+          "description": "Edges representing relationships between knowledge nodes, owned by the user. Each edge document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the knowledge edge."
+            },
+            {
+              "name": "edgeId",
+              "description": "The unique identifier for the specific knowledge edge."
+            }
+          ]
         }
       },
       {
-        "path": "/users/{userId}/analyticsMetrics/{metricId}",
+        "path": "/skills/{skillId}",
         "definition": {
-          "entityName": "AnalyticsMetric",
+          "entityName": "Skill",
           "schema": {
-            "$ref": "#/backend/entities/AnalyticsMetric"
+            "$ref": "#/backend/entities/Skill"
           },
-          "description": "Stores user-specific analytical metrics related to productivity and goals. Each document includes a denormalized 'userId' for authorization independence."
+          "description": "Globally defined skill concepts. These are public and readable by all authenticated users, providing a central reference for skills across the application. Creation/updates should be restricted (e.g., to an admin role).",
+          "params": [
+            {
+              "name": "skillId",
+              "description": "The unique identifier for the specific skill definition."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userSkills/{userSkillId}",
+        "definition": {
+          "entityName": "UserSkill",
+          "schema": {
+            "$ref": "#/backend/entities/UserSkill"
+          },
+          "description": "Tracks a user's proficiency and learning status for a specific skill. Each document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this skill record."
+            },
+            {
+              "name": "userSkillId",
+              "description": "The unique identifier for the user's specific skill tracking record."
+            }
+          ]
         }
       },
       {
@@ -548,7 +789,17 @@
           "schema": {
             "$ref": "#/backend/entities/LearningRoadmap"
           },
-          "description": "Stores AI-generated personalized learning roadmaps owned by the user. Each document includes a denormalized 'userId' for authorization independence."
+          "description": "Personalized learning plans generated for a user. Each roadmap document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the learning roadmap."
+            },
+            {
+              "name": "roadmapId",
+              "description": "The unique identifier for the specific learning roadmap."
+            }
+          ]
         }
       },
       {
@@ -558,10 +809,44 @@
           "schema": {
             "$ref": "#/backend/entities/RoadmapStep"
           },
-          "description": "Stores individual steps within a user's learning roadmap. This document MUST include a denormalized 'userId' for authorization independence and QAPs, in addition to 'learningRoadmapId'."
+          "description": "Individual steps within a user's learning roadmap. The `userId` from the parent roadmap is denormalized into each step document for authorization independence, eliminating `get()` calls in rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the roadmap step and its parent roadmap."
+            },
+            {
+              "name": "roadmapId",
+              "description": "The unique identifier of the parent learning roadmap."
+            },
+            {
+              "name": "stepId",
+              "description": "The unique identifier for the specific roadmap step."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/metricSnapshots/{snapshotId}",
+        "definition": {
+          "entityName": "UserMetricSnapshot",
+          "schema": {
+            "$ref": "#/backend/entities/UserMetricSnapshot"
+          },
+          "description": "Periodic snapshots of user performance and cognitive metrics for analytics. Each snapshot document includes `userId` for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user to whom the metric snapshot belongs."
+            },
+            {
+              "name": "snapshotId",
+              "description": "The unique identifier for the specific metric snapshot."
+            }
+          ]
         }
       }
     ],
-    "reasoning": "The Firestore structure for OpenMind OS is designed with a strong emphasis on Authorization Independence, Structural Segregation, and Access Modeling, as mandated by the core design principles. All user-specific data is rooted under a top-level `users` collection, with each user's data residing in a document at `/users/{userId}`. This path directly maps to the authenticated user's UID, providing immediate path-based ownership for the `UserProfile`.\n\nFor all subsequent entities (Goals, Tasks, Tags, KnowledgeNodes, KnowledgeEdges, AnalyticsMetrics, LearningRoadmaps, and RoadmapSteps) that belong to a user, a hierarchical path structure is adopted, such as `/users/{userId}/goals/{goalId}`. This design choice inherently supports the 'Private Data' and 'Hierarchical Paths for User-Owned Data' access modeling strategies, ensuring that data access is tightly coupled with the authenticated user.\n\n**Authorization Independence (CRITICAL)** is achieved through comprehensive denormalization. For every document within a user's subcollection (e.g., `goals`, `tasks`, `knowledgeNodes`), the `userId` of the owning user is explicitly stored as a field within that document. For instance, a `Task` document, while living under `/users/{userId}/goals/{goalId}/tasks/{taskId}`, will also contain its own `userId` field. This denormalization eliminates the need for expensive and complex `get()` calls in Firestore Security Rules to verify parent ownership. Rules can simply check `request.auth.uid == resource.data.userId` and `request.auth.uid == userId` (from the path wildcard), ensuring atomic and secure operations.\n\n**QAPs (Queries Are Not Filters)** are fully supported by this structure. When a user requests a list of their goals (e.g., querying `/users/{userId}/goals`), the security rules can enforce that `request.auth.uid` matches the `{userId}` wildcard in the path. Furthermore, the denormalized `userId` within each `Goal` document allows for an additional, robust check (`resource.data.userId == request.auth.uid`) to prevent data leakage and ensure that only genuinely owned documents are returned. This explicit validation within the document itself, rather than relying on inferred parent ownership, ensures that `list` operations are both secure and performant, adhering to the principle that rules are not filters. Structural Segregation is maintained by keeping all user-private data distinct and uniformly secured within their respective user paths, avoiding mixed security postures in any single collection."
+    "reasoning": "The Firestore structure for OpenMind OS is designed with a strong emphasis on user-centricity, security, and scalability, adhering to the core design principles. All personal user data is organized under a top-level `/users/{userId}` collection, making `request.auth.uid` the primary and most efficient authorization mechanism. This parent-child relationship (User 1:N Goal, Goal 1:N Task, etc.) is consistently applied to ensure clear ownership and simplified security rules.\n\nAuthorization Independence is achieved by explicitly including the `userId` field in every document that belongs to a user, even within subcollections. For example, `Task` documents are located at `/users/{userId}/goals/{goalId}/tasks/{taskId}`, and each `Task` document will contain a `userId` field matching the `{userId}` in the path. This denormalization means that security rules for `Task` documents do not need to perform a `get()` operation on the parent `Goal` document to verify ownership; they can simply check `request.auth.uid == resource.data.userId && resource.data.userId == userId` (where `userId` is the path wildcard). This prevents rule complexity, avoids dependencies on parent documents, and supports atomic operations.\n\nQAPs (Query as a Proxy for Security) are fully supported through Structural Segregation. By placing all user-specific data under `/users/{userId}/...` paths, any `list` operation on these collections is automatically constrained by the `request.auth.uid`. A user can only query for their own goals, tasks, knowledge nodes, etc., because the path itself contains their unique identifier. This eliminates the need for complex server-side filtering or inefficient client-side `where()` clauses that can be bypassed by malicious users. The global `skills` collection (`/skills/{skillId}`) is a dedicated top-level collection for public, shared skill definitions, maintaining a homogeneous security posture (globally readable) separate from private user data. This clear separation ensures that security rules are straightforward and easy to debug, as each collection or subcollection inherently defines its access patterns without relying on conditional logic based on document content for fundamental authorization."
   }
 }
