@@ -184,8 +184,7 @@ export default function LandingPage() {
               </motion.div>
 
               <motion.div style={{ y: orbY }} className="relative flex items-center justify-center ai-breathing-glow">
-                <div className="pointer-events-none absolute h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(88,164,255,0.24),transparent_66%)] blur-3xl" />
-                <div className="pointer-events-none absolute h-[420px] w-[640px] rounded-full bg-[radial-gradient(circle,rgba(130,190,255,0.14),transparent_64%)] blur-[82px]" />
+                <div className="pointer-events-none absolute h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(88,164,255,0.2),transparent_66%)] blur-3xl" />
                 <AICoreOrb3D />
               </motion.div>
             </div>
