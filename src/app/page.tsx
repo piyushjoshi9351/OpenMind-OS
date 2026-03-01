@@ -138,7 +138,9 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(92,170,255,0.2),transparent_34%),radial-gradient(circle_at_84%_8%,rgba(163,105,255,0.2),transparent_32%)]" />
             <div className="absolute inset-0 landing-grid opacity-50" />
             <div className="absolute inset-0 beam-sweep" />
+            <div className="absolute inset-0 star-field opacity-65" />
             <div className="absolute inset-0 grain-overlay" />
+            <div className="absolute right-[12%] top-[16%] h-44 w-44 rounded-full lens-flare pointer-events-none" />
           </motion.div>
 
           <div className="mx-auto max-w-7xl">
@@ -161,7 +163,9 @@ export default function LandingPage() {
                   <Zap className="h-3.5 w-3.5" /> Advanced AI Cognitive Platform
                 </div>
 
-                <TypingIntelligenceText />
+                <div className="relative inline-block text-sweep">
+                  <TypingIntelligenceText />
+                </div>
 
                 <p className="max-w-2xl text-base md:text-xl text-cyan-100/70 leading-relaxed">
                   OpenMind runs like a personal AI operating system—observing intent, optimizing execution, and scaling your learning velocity through neural intelligence loops.
@@ -179,7 +183,7 @@ export default function LandingPage() {
                 </motion.div>
               </motion.div>
 
-              <motion.div style={{ y: orbY }} className="relative flex items-center justify-center">
+              <motion.div style={{ y: orbY }} className="relative flex items-center justify-center ai-breathing-glow">
                 <div className="pointer-events-none absolute h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(88,164,255,0.2),transparent_66%)] blur-3xl" />
                 <AICoreOrb3D />
               </motion.div>
@@ -293,7 +297,57 @@ export default function LandingPage() {
         <section className="mx-auto max-w-7xl px-4 md:px-8 py-16" id="architecture">
           <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
             <p className="text-[11px] tracking-[0.16em] uppercase text-cyan-200/80">Your Brain. Visualized.</p>
-            <h2 className="mt-2 text-3xl md:text-4xl font-headline font-bold">Neural Signal Architecture</h2>
+            <h2 className="mt-2 text-3xl md:text-4xl font-headline font-bold">Animated Knowledge Graph Simulation</h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-black/25 p-6 md:p-8"
+          >
+            <div className="pointer-events-none absolute inset-0 star-field opacity-45" />
+            <div className="pointer-events-none absolute inset-0 beam-sweep" />
+            <div className="pointer-events-none absolute inset-0 noise-overlay opacity-35" />
+            <div className="relative h-64 rounded-2xl border border-cyan-300/12 bg-[#070b14]/85 overflow-hidden">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((node, index) => (
+                <motion.span
+                  key={`graph-node-${node}`}
+                  className="absolute h-2.5 w-2.5 rounded-full bg-cyan-300/90 shadow-[0_0_16px_rgba(95,193,255,0.65)]"
+                  initial={{ x: 22 + node * 38, y: 20 + (node % 4) * 48 }}
+                  animate={{
+                    x: [22 + node * 38, 16 + node * 36, 24 + node * 37],
+                    y: [20 + (node % 4) * 48, 30 + (node % 5) * 42, 24 + (node % 4) * 48],
+                    opacity: [0.5, 1, 0.6],
+                  }}
+                  transition={{ duration: 5 + index * 0.22, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ))}
+
+              {[
+                { left: '8%', top: '22%', width: '18%' },
+                { left: '22%', top: '46%', width: '24%' },
+                { left: '38%', top: '30%', width: '22%' },
+                { left: '56%', top: '52%', width: '17%' },
+                { left: '68%', top: '36%', width: '19%' },
+                { left: '32%', top: '62%', width: '28%' },
+              ].map((line, index) => (
+                <motion.div
+                  key={`graph-line-${index}`}
+                  className="absolute h-px bg-gradient-to-r from-cyan-300/0 via-cyan-300/45 to-purple-300/0"
+                  style={{ left: line.left, top: line.top, width: line.width }}
+                  animate={{ opacity: [0.15, 0.55, 0.2], scaleX: [0.95, 1.06, 0.98] }}
+                  transition={{ duration: 3.4 + index * 0.28, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 md:px-8 pb-16">
+          <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
+            <p className="text-[11px] tracking-[0.16em] uppercase text-cyan-200/80">How OpenMind Thinks</p>
+            <h2 className="mt-2 text-3xl md:text-4xl font-headline font-bold">Neural Signal Architecture Pipeline</h2>
           </motion.div>
 
           <div className="rounded-3xl border border-cyan-300/20 bg-black/25 p-6 md:p-8">
