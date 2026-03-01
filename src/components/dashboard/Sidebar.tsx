@@ -85,7 +85,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-[4.25rem] hover:w-64 transition-[width] duration-300 bg-transparent border-r border-white/5 backdrop-blur-md sidebar-neon-edge">
+    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-[4.25rem] hover:w-64 transition-[width] duration-300 bg-black/20 border-r border-white/5 backdrop-blur-md">
       <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-cyan-400/5 via-cyan-300/75 to-purple-400/8" />
       <div className="pointer-events-none absolute inset-0 sidebar-hover-glow opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-500" />
 
@@ -114,15 +114,16 @@ export function Sidebar() {
                   aria-label={`Go to ${item.name}`}
                   aria-current={pathname === item.href ? 'page' : undefined}
                   className={cn(
-                    'relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 nav-glow',
+                    'group/nav relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 nav-glow',
                     pathname === item.href
                       ? 'bg-primary/20 text-cyan-100 border border-cyan-300/30 shadow-[0_0_20px_rgba(88,177,255,0.25)]'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent/35 border border-transparent',
                   )}
                 >
                   <item.icon className={cn(
-                    'h-5 w-5 shrink-0',
+                    'h-5 w-5 shrink-0 transition-all duration-200',
                     pathname === item.href ? 'text-cyan-200' : 'text-muted-foreground group-hover/sidebar:text-cyan-200',
+                    'group-hover/nav:scale-[1.05] group-hover/nav:drop-shadow-[0_0_8px_rgba(124,190,255,0.55)]',
                   )} />
                   <span className="opacity-0 -translate-x-1 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 transition-all duration-200 whitespace-nowrap">
                     {item.name}

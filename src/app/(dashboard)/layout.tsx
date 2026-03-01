@@ -47,9 +47,9 @@ export default function DashboardLayout({
       <OnboardingFlow />
       <CommandPalette />
       <SystemTopBar />
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
+      <div className="flex min-h-[calc(100vh-3rem)]">
         <Sidebar />
-        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-8 relative">
+        <main className="flex-1 overflow-auto p-6 pb-24 md:p-8 md:pb-8 relative">
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(16,25,52,0.35)_0%,rgba(9,13,30,0.6)_45%,rgba(20,12,44,0.45)_100%)]" />
           <div className="pointer-events-none absolute inset-0 animated-grid opacity-35" />
           <div className="pointer-events-none absolute inset-0 beam-sweep" />
@@ -61,9 +61,9 @@ export default function DashboardLayout({
             <motion.div
               key={pathname}
               className="relative z-10"
-              initial={{ opacity: 0, scale: 0.992, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.994, y: -4 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             >
               {children}

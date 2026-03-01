@@ -95,6 +95,25 @@
     @apply glass-panel rounded-2xl border-none shadow-sm transition-all duration-200 hover:shadow-md;
   }
 
+  .om-card-primary {
+    @apply om-card;
+    background: linear-gradient(160deg, rgba(80, 152, 255, 0.14), rgba(18, 24, 40, 0.55));
+    border: 1px solid rgba(127, 190, 255, 0.26);
+  }
+
+  .om-card-secondary {
+    @apply om-card;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(12, 18, 34, 0.5));
+    border: 1px solid rgba(126, 154, 208, 0.18);
+  }
+
+  .om-card-passive {
+    @apply om-card;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(8, 12, 26, 0.36));
+    border: 1px solid rgba(109, 132, 178, 0.12);
+    opacity: 0.9;
+  }
+
   .glass-panel {
     @apply border border-cyan-300/15 bg-white/[0.045] backdrop-blur-xl;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -140,7 +159,7 @@
     position: absolute;
     inset: -20%;
     background: linear-gradient(110deg, transparent 22%, rgba(110, 176, 255, 0.08) 48%, transparent 72%);
-    animation: beam-sweep 24s linear infinite;
+    animation: beam-sweep 20s linear infinite;
     pointer-events: none;
   }
 
@@ -156,7 +175,7 @@
   }
 
   .radial-core-light {
-    background: radial-gradient(circle at 50% 44%, rgba(90, 155, 255, 0.11), transparent 46%), radial-gradient(circle at 50% 44%, rgba(170, 104, 255, 0.08), transparent 60%);
+    background: radial-gradient(circle at 50% 44%, rgba(90, 155, 255, 0.13), transparent 44%), radial-gradient(circle at 50% 44%, rgba(170, 104, 255, 0.07), transparent 62%);
   }
 
   .data-stream {
@@ -220,6 +239,10 @@
   .animate-waveform {
     animation: waveform 1.2s ease-in-out infinite;
   }
+
+  .graph-shimmer {
+    animation: graph-shimmer 2.8s ease-in-out infinite;
+  }
 }
 
 @keyframes thinking-dots {
@@ -264,6 +287,12 @@
 @keyframes waveform {
   0%, 100% { opacity: 0.55; transform: scaleY(0.8); }
   50% { opacity: 1; transform: scaleY(1.2); }
+}
+
+@keyframes graph-shimmer {
+  0% { transform: translateX(-18%); opacity: 0.24; }
+  50% { transform: translateX(0%); opacity: 0.4; }
+  100% { transform: translateX(18%); opacity: 0.24; }
 }
 
 @keyframes warning-vibrate {

@@ -97,7 +97,7 @@ export function CommandPalette() {
       <DialogContent className="sm:max-w-2xl glass-panel border-cyan-300/20">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-cyan-100">
-            <Command className="h-4 w-4" /> OpenMind Command Palette
+            <Command className="h-4 w-4" /> AI Command Center
           </DialogTitle>
         </DialogHeader>
 

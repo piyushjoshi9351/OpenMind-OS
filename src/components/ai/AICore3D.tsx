@@ -7,19 +7,23 @@ import * as THREE from 'three';
 
 interface AICore3DProps {
   activityLevel: number;
+  productivity: number;
+  syncActive?: boolean;
 }
 
-function CoreModel({ activityLevel }: { activityLevel: number }) {
+function CoreModel({ activityLevel, productivity, syncActive = false }: { activityLevel: number; productivity: number; syncActive?: boolean }) {
   const coreRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
   const orbitRef = useRef<THREE.Mesh>(null);
   const innerPulseRef = useRef<THREE.Mesh>(null);
   const particleFieldRef = useRef<THREE.Points>(null);
   const particleStreamRef = useRef<THREE.Points>(null);
+  const sparkParticlesRef = useRef<THREE.Points>(null);
   const coreMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const baseScale = 1 + activityLevel / 260;
   const activityFactor = Math.max(0.15, Math.min(1.2, activityLevel / 100));
+  const productivityFactor = Math.max(0, Math.min(1, productivity));
 
   const particles = useMemo(() => {
     const values = new Float32Array(800 * 3);
@@ -46,9 +50,23 @@ function CoreModel({ activityLevel }: { activityLevel: number }) {
     return values;
   }, []);
 
+  const sparkParticles = useMemo(() => {
+    const values = new Float32Array(140 * 3);
+    for (let index = 0; index < values.length; index += 3) {
+      const radius = 0.8 + Math.random() * 0.7;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      values[index] = radius * Math.sin(phi) * Math.cos(theta);
+      values[index + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      values[index + 2] = radius * Math.cos(phi);
+    }
+    return values;
+  }, []);
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const pulse = baseScale + Math.sin(t * (1.3 + activityFactor)) * 0.05;
+    const pulseSpeed = 1.1 + activityFactor * 1.2;
+    const pulse = baseScale + Math.sin(t * pulseSpeed) * 0.05;
     const flicker = (Math.random() - 0.5) * 0.09;
 
     if (coreRef.current) {
@@ -67,7 +85,7 @@ function CoreModel({ activityLevel }: { activityLevel: number }) {
     }
 
     if (ringMaterialRef.current) {
-      ringMaterialRef.current.emissiveIntensity = 0.68 + activityFactor * 0.42 + flicker * 0.5;
+      ringMaterialRef.current.emissiveIntensity = 0.52 + productivityFactor * 0.78 + flicker * 0.35;
     }
 
     if (orbitRef.current) {
@@ -88,6 +106,12 @@ function CoreModel({ activityLevel }: { activityLevel: number }) {
     if (particleStreamRef.current) {
       particleStreamRef.current.rotation.y -= 0.01 + activityFactor * 0.009;
       particleStreamRef.current.rotation.z = Math.sin(t * 0.8) * 0.22;
+    }
+
+    if (sparkParticlesRef.current) {
+      sparkParticlesRef.current.visible = syncActive;
+      sparkParticlesRef.current.rotation.y += 0.02;
+      sparkParticlesRef.current.rotation.x = Math.sin(t * 1.2) * 0.35;
     }
   });
 
@@ -127,16 +151,20 @@ function CoreModel({ activityLevel }: { activityLevel: number }) {
         <PointMaterial transparent color="#b6a5ff" size={0.018 + activityFactor * 0.009} sizeAttenuation depthWrite={false} opacity={0.8} />
       </Points>
 
+      <Points ref={sparkParticlesRef} positions={sparkParticles} stride={3} frustumCulled>
+        <PointMaterial transparent color="#f9d38a" size={0.02} sizeAttenuation depthWrite={false} opacity={0.9} />
+      </Points>
+
       <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={0.5} />
     </>
   );
 }
 
-export function AICore3D({ activityLevel }: AICore3DProps) {
+export function AICore3D({ activityLevel, productivity, syncActive = false }: AICore3DProps) {
   return (
     <div className="h-[360px] w-full">
       <Canvas dpr={[1, 1.6]} camera={{ position: [0, 0, 5], fov: 45 }}>
-        <CoreModel activityLevel={activityLevel} />
+        <CoreModel activityLevel={activityLevel} productivity={productivity} syncActive={syncActive} />
       </Canvas>
     </div>
   );

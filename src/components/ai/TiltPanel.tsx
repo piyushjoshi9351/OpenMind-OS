@@ -6,16 +6,18 @@ import { useRef } from 'react';
 interface TiltPanelProps {
   children: React.ReactNode;
   className?: string;
+  inverse?: boolean;
 }
 
-export function TiltPanel({ children, className }: TiltPanelProps) {
+export function TiltPanel({ children, className, inverse = false }: TiltPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const rotateX = useSpring(useTransform(mouseY, [-50, 50], [2, -2]), { stiffness: 140, damping: 18 });
   const rotateY = useSpring(useTransform(mouseX, [-50, 50], [-2, 2]), { stiffness: 140, damping: 18 });
-  const translateX = useSpring(useTransform(mouseX, [-50, 50], [-2.5, 2.5]), { stiffness: 120, damping: 20 });
-  const translateY = useSpring(useTransform(mouseY, [-50, 50], [-2.5, 2.5]), { stiffness: 120, damping: 20 });
+  const direction = inverse ? -1 : 1;
+  const translateX = useSpring(useTransform(mouseX, [-50, 50], [-2.5 * direction, 2.5 * direction]), { stiffness: 120, damping: 20 });
+  const translateY = useSpring(useTransform(mouseY, [-50, 50], [-2.5 * direction, 2.5 * direction]), { stiffness: 120, damping: 20 });
 
   const onMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = ref.current?.getBoundingClientRect();

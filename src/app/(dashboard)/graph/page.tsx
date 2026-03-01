@@ -93,7 +93,7 @@ export default function GraphPage() {
         </div>
       </div>
 
-      <Card className="glass-panel border-white/10 shadow-xl">
+      <Card className="om-card-secondary shadow-xl">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="node-title">Node title</Label>
@@ -137,13 +137,21 @@ export default function GraphPage() {
 
       <div className="relative rounded-2xl border border-white/10 bg-black/35 p-3 md:p-4 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(90,170,255,0.10),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(150,90,255,0.12),transparent_32%)] pointer-events-none" />
+        <div className="absolute inset-0 animated-grid opacity-25 pointer-events-none" />
+        <div className="absolute inset-0 beam-sweep pointer-events-none" />
+        <div className="absolute inset-0 noise-overlay opacity-20 pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_0%,rgba(123,177,255,0.06)_48%,transparent_100%)] graph-shimmer pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 relative z-10">
-          <div className="lg:col-span-3 h-[620px]">
+          <div className="lg:col-span-3 h-[620px] relative">
             <KnowledgeGraph data={graphData} weakClusters={weakClusters} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} />
+            <div className="absolute left-4 bottom-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-black/40 px-3 py-1 text-[11px] text-cyan-100/85 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" />
+              AI scanning graph...
+            </div>
           </div>
           <div className="space-y-6">
-            <Card className="glass-panel border-white/10 shadow-xl">
+            <Card className="om-card-primary shadow-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-headline">Graph Insights</CardTitle>
               </CardHeader>
@@ -163,7 +171,7 @@ export default function GraphPage() {
               </CardContent>
             </Card>
 
-            <Card className="glass-panel border-white/10 shadow-xl">
+            <Card className="om-card-passive shadow-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-headline">Research Console</CardTitle>
               </CardHeader>

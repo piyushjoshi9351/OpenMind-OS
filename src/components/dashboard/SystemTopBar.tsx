@@ -1,24 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Command, Cpu, HeartPulse, ShieldCheck, Volume2, VolumeX } from 'lucide-react';
+import { Bell, Command, HeartPulse, ShieldCheck, Volume2, VolumeX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 
-const toModuleName = (pathname: string) => {
-  if (pathname === '/dashboard') return 'Dashboard Module';
-  if (pathname === '/insights') return 'Intelligence Module';
-  if (pathname === '/tasks') return 'Execution Module';
-  if (pathname === '/graph') return 'Knowledge Graph Module';
-  if (pathname === '/analytics') return 'Analytics Module';
-  if (pathname === '/roadmap') return 'Roadmap Module';
-  return 'AI Workspace Module';
+const toModuleContext = (pathname: string): { category: 'Execution' | 'Intelligence' | 'Knowledge' | 'System'; detail: string } => {
+  if (pathname === '/dashboard') return { category: 'Execution', detail: 'Live Monitoring' };
+  if (pathname === '/tasks') return { category: 'Execution', detail: 'Focus: Medium' };
+  if (pathname === '/goals') return { category: 'Execution', detail: 'Goal Planning' };
+  if (pathname === '/roadmap') return { category: 'Execution', detail: 'Plan Optimization' };
+  if (pathname === '/insights') return { category: 'Intelligence', detail: 'Pattern Analysis' };
+  if (pathname === '/analytics') return { category: 'Intelligence', detail: 'Signal Tracking' };
+  if (pathname === '/graph') return { category: 'Knowledge', detail: 'Semantic Mapping' };
+  return { category: 'System', detail: 'Focus: Medium' };
 };
+
+type SyncStatus = 'synced' | 'syncing' | 'disconnected';
 
 export function SystemTopBar() {
   const pathname = usePathname();
-  const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date());
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
   const [ambientOn, setAmbientOn] = useState(false);
   const [activityLevel, setActivityLevel] = useState(42);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -27,13 +30,28 @@ export function SystemTopBar() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setLastUpdatedAt(new Date());
+      if (!window.navigator.onLine) {
+        setSyncStatus('disconnected');
+        return;
+      }
+      setSyncStatus('syncing');
       setActivityLevel((current) => {
         const delta = (Math.random() - 0.5) * 14;
         return Math.max(20, Math.min(96, Math.round(current + delta)));
       });
+      window.setTimeout(() => setSyncStatus(window.navigator.onLine ? 'synced' : 'disconnected'), 900);
     }, 15000);
-    return () => window.clearInterval(timer);
+
+    const onOnline = () => setSyncStatus('synced');
+    const onOffline = () => setSyncStatus('disconnected');
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
   }, []);
 
   useEffect(() => {
@@ -90,30 +108,56 @@ export function SystemTopBar() {
     gainRef.current?.gain.setTargetAtTime(0.012, audioContextRef.current?.currentTime ?? 0, 0.12);
   };
 
-  const relative = useMemo(() => {
-    const diffMin = Math.max(0, Math.floor((Date.now() - lastUpdatedAt.getTime()) / 60000));
-    if (diffMin <= 0) return 'just now';
-    return `${diffMin}m ago`;
-  }, [lastUpdatedAt]);
+  const context = useMemo(() => toModuleContext(pathname), [pathname]);
+  const moduleBadgeClass = useMemo(() => {
+    if (context.category === 'Execution') {
+      return 'border-cyan-300/25 bg-cyan-500/8 text-cyan-200/85';
+    }
+    if (context.category === 'Intelligence') {
+      return 'border-violet-300/25 bg-violet-500/10 text-violet-200/85';
+    }
+    if (context.category === 'Knowledge') {
+      return 'border-indigo-300/25 bg-indigo-500/10 text-indigo-200/85';
+    }
+    return 'border-slate-300/20 bg-slate-500/10 text-slate-200/85';
+  }, [context.category]);
+
+  const syncBadge = useMemo(() => {
+    if (syncStatus === 'disconnected') {
+      return { label: 'Disconnected', className: 'border-rose-300/20 bg-rose-500/8 text-rose-200/85', dotClassName: 'bg-rose-300/80' };
+    }
+    if (syncStatus === 'syncing') {
+      return { label: 'Syncing', className: 'border-amber-300/20 bg-amber-500/8 text-amber-200/85', dotClassName: 'bg-amber-300/80 animate-pulse' };
+    }
+    return { label: 'Synced', className: 'border-emerald-300/20 bg-emerald-500/8 text-emerald-200/80', dotClassName: 'bg-emerald-300/75' };
+  }, [syncStatus]);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-background/70 backdrop-blur-2xl shadow-[0_14px_36px_rgba(6,10,24,0.52)]">
-      <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-3">
-        <div className="min-w-0 flex items-center gap-2 text-xs md:text-sm">
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-background/65 backdrop-blur-2xl shadow-[0_12px_28px_rgba(5,8,20,0.45)]">
+      <div className="relative h-12 px-5 md:px-8 flex items-center justify-between gap-6">
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-300/45 to-transparent" />
+
+        <div className="min-w-0 flex items-center gap-6 text-[12px] md:text-[13px]">
           <Badge className="border-cyan-300/30 bg-primary/20 text-cyan-100">🧠 OpenMind OS</Badge>
-          <span className="hidden lg:inline text-muted-foreground">|</span>
-          <span className="hidden lg:inline text-cyan-200 inline-flex items-center gap-1.5">
+          <span className="text-cyan-200/95 inline-flex items-center gap-2">
             AI Core: ACTIVE
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" />
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-300/80 animate-pulse" />
           </span>
-          <span className="hidden lg:inline text-muted-foreground">|</span>
-          <span className="hidden md:inline text-muted-foreground">Focus Mode: Medium</span>
-          <span className="hidden xl:inline text-muted-foreground">| Syncing...</span>
-          <span className="hidden xl:inline text-muted-foreground">| Last Updated {relative}</span>
-          <span className="hidden 2xl:inline text-primary/90">• {toModuleName(pathname)}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden lg:flex flex-1 justify-center items-center gap-4 text-[11px] text-muted-foreground/75">
+          <Badge className={`px-2 py-0.5 text-[10px] ${moduleBadgeClass}`}>
+            <span className="mr-1 inline-flex h-1.5 w-1.5 rounded-full bg-current/70" />
+            {context.category}
+          </Badge>
+          <span className="text-cyan-100/62">{context.detail}</span>
+          <Badge className={`px-1.5 py-0 text-[10px] ${syncBadge.className}`}>
+            <span className={`mr-1.5 inline-flex h-1.5 w-1.5 rounded-full ${syncBadge.dotClassName}`} />
+            {syncBadge.label}
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:flex items-end gap-[2px] h-4 px-2 rounded-full border border-cyan-300/20 bg-cyan-500/10">
             {[0, 1, 2, 3, 4, 5, 6].map((bar) => {
               const base = 24 + (activityLevel / 10) * (0.45 + bar * 0.08);
@@ -124,25 +168,21 @@ export function SystemTopBar() {
 
           <div className="hidden sm:flex items-center gap-1 rounded-full border border-emerald-300/25 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-200">
             <ShieldCheck className="h-3.5 w-3.5" />
-            System Health: Stable
+            Stable
           </div>
 
           <div className="hidden sm:flex items-center gap-1 rounded-full border border-cyan-300/25 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200">
             <HeartPulse className="h-3.5 w-3.5" />
             <span className="inline-flex h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
-            Live Pulse
+            Live
           </div>
-
-          <Button variant="ghost" size="icon" aria-label="Notifications" className="text-muted-foreground hover:text-foreground">
-            <Bell className="h-4 w-4" />
-          </Button>
 
           <Button
             variant="ghost"
             size="sm"
             aria-label="Toggle AI Ambient Mode"
             onClick={() => { void toggleAmbientMode(); }}
-            className="hidden md:inline-flex text-cyan-100/90 hover:text-cyan-100 hover:bg-cyan-500/10"
+            className="hidden md:inline-flex h-8 text-cyan-100/90 hover:text-cyan-100 hover:bg-cyan-500/10 border border-cyan-300/20 rounded-full px-3"
           >
             {ambientOn ? <Volume2 className="h-3.5 w-3.5 mr-1" /> : <VolumeX className="h-3.5 w-3.5 mr-1" />}
             Ambient
@@ -152,14 +192,16 @@ export function SystemTopBar() {
             variant="outline"
             size="sm"
             onClick={() => window.dispatchEvent(new Event('om:command-palette-open'))}
-            className="border-cyan-300/30 bg-black/20 hover:bg-black/30 text-cyan-100"
+            className="h-8 border-cyan-300/30 bg-black/20 hover:bg-black/30 text-cyan-100 rounded-full px-3"
           >
             <Command className="h-3.5 w-3.5 mr-1" />
             <span className="hidden md:inline">Command</span>
-            <span className="ml-1 text-[10px] text-muted-foreground">⌘/Ctrl+K</span>
+            <span className="ml-1 text-[10px] text-muted-foreground hidden lg:inline">⌘/Ctrl+K</span>
           </Button>
 
-          <Cpu className="hidden lg:block h-4 w-4 text-primary" />
+          <Button variant="ghost" size="icon" aria-label="Notifications" className="h-8 w-8 text-muted-foreground hover:text-foreground border border-white/10 rounded-full">
+            <Bell className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </header>
