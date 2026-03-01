@@ -22,17 +22,18 @@ export function StatsCard({ title, value, description, icon, trend, className }:
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
+      whileHover={{ y: -4, scale: 1.02 }}
     >
-      <Card className={cn("overflow-hidden border-none shadow-sm", className)}>
+      <Card className={cn("om-card overflow-hidden", className)}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <div className="bg-primary/5 p-3 rounded-xl text-primary">
+            <div className="bg-primary/15 p-3 rounded-xl text-primary neon-glow">
               {icon}
             </div>
             {trend && (
               <span className={cn(
                 "text-xs font-medium px-2 py-1 rounded-full",
-                trend.isUp ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                trend.isUp ? "bg-cyan-400/20 text-cyan-200" : "bg-purple-500/20 text-purple-200"
               )}>
                 {trend.isUp ? "+" : "-"}{trend.value}%
               </span>

@@ -18,12 +18,81 @@ import {
   BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useFirestore, useUser } from '@/firebase';
+import { useRealtimeGoals } from '@/lib/hooks';
+import { taskService } from '@/services';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RoadmapPage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { goals } = useRealtimeGoals();
+  const { toast } = useToast();
+
   const [targetRole, setTargetRole] = useState('');
   const [timeline, setTimeline] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const [roadmap, setRoadmap] = useState<GenerateLearningRoadmapOutput | null>(null);
+  const [completedActivities, setCompletedActivities] = useState<Record<string, boolean>>({});
+
+  const getExecutorGoalId = () => {
+    const learningGoal = goals.find((goal) => goal.category === 'Learning' && goal.status !== 'Archived');
+    return learningGoal?.id ?? goals[0]?.id;
+  };
+
+  const executeRoadmap = async (scope: 'week' | 'all') => {
+    if (!user || !roadmap) {
+      return;
+    }
+
+    const goalId = getExecutorGoalId();
+    if (!goalId) {
+      toast({
+        title: 'Goal required',
+        description: 'Create at least one goal before executing roadmap tasks.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const weeks = scope === 'week' ? roadmap.weeks.slice(0, 1) : roadmap.weeks;
+    const taskPayloads = weeks.flatMap((week, weekIndex) =>
+      week.dailyTasks.flatMap((dayTask, dayIndex) =>
+        dayTask.activities.map((activity) => {
+          const deadline = new Date(Date.now() + (weekIndex * 7 + dayIndex + 1) * 86400000).toISOString().slice(0, 10);
+          return {
+            userId: user.uid,
+            goalId,
+            title: `${dayTask.topic}: ${activity}`,
+            estimatedTime: 60,
+            deadline,
+            tags: ['Roadmap', targetRole || 'Learning'],
+          };
+        }),
+      ),
+    );
+
+    const cappedTasks = taskPayloads.slice(0, 80);
+    setIsExecuting(true);
+    try {
+      await Promise.all(cappedTasks.map((payload) => taskService.create(firestore, payload)));
+      toast({
+        title: 'Roadmap executed',
+        description: `${cappedTasks.length} task(s) added to your task board.${taskPayloads.length > cappedTasks.length ? ' (Execution capped at 80 tasks.)' : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Execution failed',
+        description: error instanceof Error ? error.message : 'Unable to convert roadmap into tasks.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,15 +135,18 @@ export default function RoadmapPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="timeline">Timeline (Months)</Label>
-              <Input 
-                id="timeline" 
-                type="number" 
-                min={1} 
-                max={24} 
-                value={timeline}
-                onChange={(e) => setTimeline(parseInt(e.target.value))}
-                className="bg-background/50"
-              />
+              <div className="flex items-center gap-3">
+                <Input 
+                  id="timeline" 
+                  type="number" 
+                  min={1} 
+                  max={24} 
+                  value={timeline}
+                  onChange={(e) => setTimeline(Number(e.target.value))}
+                  className="bg-background/50"
+                />
+                <Badge variant="secondary">{timeline * 4} Weeks</Badge>
+              </div>
             </div>
             <div className="md:col-span-3 mt-2">
               <Button type="submit" disabled={isLoading} className="w-full gap-2 h-11 text-lg">
@@ -114,6 +186,25 @@ export default function RoadmapPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
           >
+            <Card className="border-none shadow-sm">
+              <CardContent className="p-5 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Roadmap progress</span>
+                  <span>
+                    {Object.values(completedActivities).filter(Boolean).length}
+                    /
+                    {roadmap.weeks.reduce((sum, week) => sum + week.dailyTasks.reduce((taskSum, task) => taskSum + task.activities.length, 0), 0)} completed
+                  </span>
+                </div>
+                <Progress
+                  value={
+                    (Object.values(completedActivities).filter(Boolean).length /
+                      Math.max(1, roadmap.weeks.reduce((sum, week) => sum + week.dailyTasks.reduce((taskSum, task) => taskSum + task.activities.length, 0), 0))) * 100
+                  }
+                />
+              </CardContent>
+            </Card>
+
             <div className="bg-primary text-primary-foreground p-8 rounded-2xl shadow-lg">
               <h2 className="text-3xl font-headline font-bold">{roadmap.roadmapTitle}</h2>
               <p className="mt-4 opacity-90 leading-relaxed text-lg">{roadmap.roadmapDescription}</p>
@@ -124,6 +215,26 @@ export default function RoadmapPage() {
                 <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm">
                   <MapIcon className="h-4 w-4" /> {roadmap.weeks.length} Stages
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-3 mt-6">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isExecuting}
+                  className="bg-white/15 text-white hover:bg-white/20"
+                  onClick={() => executeRoadmap('week')}
+                >
+                  {isExecuting ? 'Executing...' : 'Roadmap Executor: Add Week 1 Tasks'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isExecuting}
+                  className="bg-white/15 text-white hover:bg-white/20"
+                  onClick={() => executeRoadmap('all')}
+                >
+                  {isExecuting ? 'Executing...' : 'One-click: Add Full Roadmap Tasks'}
+                </Button>
               </div>
             </div>
 
@@ -153,8 +264,17 @@ export default function RoadmapPage() {
                             <ul className="space-y-2">
                               {task.activities.map((act, aidx) => (
                                 <li key={aidx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                  <Checkbox
+                                    checked={Boolean(completedActivities[`${week.weekNumber}-${tidx}-${aidx}`])}
+                                    onCheckedChange={(checked) => {
+                                      setCompletedActivities((current) => ({
+                                        ...current,
+                                        [`${week.weekNumber}-${tidx}-${aidx}`]: Boolean(checked),
+                                      }));
+                                    }}
+                                  />
                                   <ChevronRight className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                  {act}
+                                  <Input defaultValue={act} className="h-8 text-xs" />
                                 </li>
                               ))}
                             </ul>

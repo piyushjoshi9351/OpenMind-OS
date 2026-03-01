@@ -1,70 +1,182 @@
 "use client"
 
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
-import { MOCK_GRAPH_DATA } from '@/lib/api-mock';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Network } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFirestore, useUser } from '@/firebase';
+import { useRealtimeGraph } from '@/lib/hooks';
+import { graphService } from '@/services';
+import { useToast } from '@/hooks/use-toast';
+import type { KnowledgeNodeType } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RippleButton } from '@/components/ai/RippleButton';
 
 export default function GraphPage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const { graphData, loading, weakClusters } = useRealtimeGraph();
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [nodeTitle, setNodeTitle] = useState('');
+  const [nodeType, setNodeType] = useState<KnowledgeNodeType>('skill');
+  const [sourceId, setSourceId] = useState('');
+  const [targetId, setTargetId] = useState('');
+  const [relationType, setRelationType] = useState('related_to');
+
+  const selectedNode = useMemo(() => graphData.nodes.find((node) => node.id === selectedNodeId) ?? null, [graphData.nodes, selectedNodeId]);
+
+  const createNode = async () => {
+    if (!user || !nodeTitle.trim()) {
+      return;
+    }
+    try {
+      await graphService.createNode(firestore, {
+        userId: user.uid,
+        title: nodeTitle,
+        type: nodeType,
+        embeddingPlaceholder: 'embedding-v1',
+      });
+      setNodeTitle('');
+      toast({ title: 'Node created', description: 'Knowledge node added to graph.' });
+    } catch (error) {
+      toast({ title: 'Node creation failed', description: error instanceof Error ? error.message : 'Please retry.', variant: 'destructive' });
+    }
+  };
+
+  const createEdge = async () => {
+    if (!user || !sourceId || !targetId || sourceId === targetId) {
+      return;
+    }
+    try {
+      await graphService.createEdge(firestore, {
+        userId: user.uid,
+        sourceId,
+        targetId,
+        relationType,
+      });
+      toast({ title: 'Relationship created', description: 'Knowledge edge added to graph.' });
+    } catch (error) {
+      toast({ title: 'Edge creation failed', description: error instanceof Error ? error.message : 'Please retry.', variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-80" />
+        <Skeleton className="h-[580px] w-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-headline font-bold">Knowledge Memory Graph</h1>
           <p className="text-muted-foreground mt-1">Visualize your cognitive connections and skill trees.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <RippleButton variant="outline" className="gap-2 glass-panel">
             <Plus className="h-4 w-4" /> Add Note
-          </Button>
-          <Button className="gap-2">
+          </RippleButton>
+          <RippleButton className="gap-2 bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30">
             <Network className="h-4 w-4" /> Link Knowledge
-          </Button>
+          </RippleButton>
         </div>
       </div>
 
+      <Card className="glass-panel border-white/10 shadow-xl">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="node-title">Node title</Label>
+            <Input id="node-title" value={nodeTitle} onChange={(event) => setNodeTitle(event.target.value)} placeholder="Distributed Training" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="node-type">Node type</Label>
+            <Select value={nodeType} onValueChange={(value) => setNodeType(value as KnowledgeNodeType)}>
+              <SelectTrigger id="node-type"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="skill">Skill</SelectItem>
+                <SelectItem value="topic">Topic</SelectItem>
+                <SelectItem value="goal">Goal</SelectItem>
+                <SelectItem value="note">Note</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button className="mt-auto" onClick={createNode}><Plus className="h-4 w-4 mr-1" /> Add Node</Button>
+
+          <div className="space-y-2">
+            <Label>Source node</Label>
+            <Select value={sourceId} onValueChange={setSourceId}>
+              <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+              <SelectContent>{graphData.nodes.map((node) => <SelectItem key={node.id} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Target node</Label>
+            <Select value={targetId} onValueChange={setTargetId}>
+              <SelectTrigger><SelectValue placeholder="Select target" /></SelectTrigger>
+              <SelectContent>{graphData.nodes.map((node) => <SelectItem key={node.id} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Relation type</Label>
+            <Input value={relationType} onChange={(event) => setRelationType(event.target.value)} placeholder="depends_on" />
+            <Button variant="outline" className="w-full" onClick={createEdge}><Network className="h-4 w-4 mr-1" /> Create Relation</Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 h-[600px]">
-          <KnowledgeGraph data={MOCK_GRAPH_DATA} />
+          <KnowledgeGraph data={graphData} weakClusters={weakClusters} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} />
         </div>
         <div className="space-y-6">
-          <Card className="border-none shadow-sm">
+          <Card className="glass-panel border-white/10 shadow-xl">
             <CardHeader>
               <CardTitle className="text-lg font-headline">Graph Insights</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-sm p-3 rounded-lg bg-primary/5">
-                <p className="font-semibold">Central Hub</p>
-                <p className="text-muted-foreground mt-1">'Machine Learning' is your most connected node.</p>
-              </div>
-              <div className="text-sm p-3 rounded-lg bg-accent/5">
-                <p className="font-semibold">Knowledge Depth</p>
-                <p className="text-muted-foreground mt-1">Your 'Neural Networks' subtree has 5 levels of depth.</p>
-              </div>
+              {weakClusters.map((cluster) => (
+                <div key={cluster.id} className="text-sm p-3 rounded-lg bg-primary/5">
+                  <p className="font-semibold">Weak Cluster: {cluster.title}</p>
+                  <p className="text-muted-foreground mt-1">Weakness score {cluster.weaknessScore}. Add supporting links to strengthen this skill area.</p>
+                </div>
+              ))}
+              {!weakClusters.length && (
+                <div className="text-sm p-3 rounded-lg bg-accent/5">
+                  <p className="font-semibold">No weak clusters detected</p>
+                  <p className="text-muted-foreground mt-1">Your skill nodes have healthy connectivity.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
           
-          <Card className="border-none shadow-sm">
+          <Card className="glass-panel border-white/10 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-lg font-headline">Recent Nodes</CardTitle>
+              <CardTitle className="text-lg font-headline">Node Detail Panel</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="text-sm space-y-3">
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-accent" /> PyTorch Advanced
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-500" /> Backpropagation
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary" /> AI Career Goal
-                </li>
-              </ul>
+              {!selectedNode && <p className="text-sm text-muted-foreground">Click a node to inspect metadata and relation context.</p>}
+              {selectedNode && (
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-semibold">Title:</span> {selectedNode.title}</p>
+                  <p><span className="font-semibold">Type:</span> {selectedNode.type}</p>
+                  <p><span className="font-semibold">Created:</span> {new Date(selectedNode.createdAt).toLocaleDateString()}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

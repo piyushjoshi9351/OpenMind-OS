@@ -2,16 +2,26 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { KnowledgeNode } from '@/types';
+import type { GraphClusterInsight, GraphDataModel } from '@/types';
 
 interface GraphProps {
-  data: {
-    nodes: KnowledgeNode[];
-    links: { source: string; target: string }[];
-  };
+  data: GraphDataModel;
+  weakClusters: GraphClusterInsight[];
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 }
 
-export function KnowledgeGraph({ data }: GraphProps) {
+type SimNode = d3.SimulationNodeDatum & GraphDataModel['nodes'][number];
+type SimLink = d3.SimulationLinkDatum<SimNode> & GraphDataModel['links'][number];
+
+const NODE_COLOR_BY_TYPE: Record<GraphDataModel['nodes'][number]['type'], string> = {
+  skill: '#5ca7ff',
+  topic: '#b678ff',
+  goal: '#6ff7ff',
+  note: 'hsl(var(--muted-foreground))',
+};
+
+export function KnowledgeGraph({ data, weakClusters, selectedNodeId, onSelectNode }: GraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -19,6 +29,7 @@ export function KnowledgeGraph({ data }: GraphProps) {
 
     const width = svgRef.current.clientWidth;
     const height = 600;
+    const weakNodeIds = new Set(weakClusters.flatMap((cluster) => cluster.nodeIds));
 
     const svg = d3.select(svgRef.current)
       .attr('width', width)
@@ -27,94 +38,152 @@ export function KnowledgeGraph({ data }: GraphProps) {
 
     svg.selectAll("*").remove();
 
-    const simulation = d3.forceSimulation(data.nodes as any)
-      .force("link", d3.forceLink(data.links).id((d: any) => d.id).distance(100))
+    const rootLayer = svg.append('g');
+
+    svg.call(
+      d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.6, 2.5])
+        .on('zoom', (event) => {
+          rootLayer.attr('transform', event.transform.toString());
+        }),
+    );
+
+    const nodes: SimNode[] = data.nodes.map((node) => ({ ...node }));
+    const links: SimLink[] = data.links.map((link) => ({ ...link }));
+
+    const simulation = d3.forceSimulation<SimNode>(nodes)
+      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.id).distance(120))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2));
 
-    const link = svg.append("g")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
+    const link = rootLayer.append("g")
+      .attr("stroke", "rgba(116, 188, 255, 0.9)")
+      .attr("stroke-opacity", 0.7)
       .selectAll("line")
-      .data(data.links)
+      .data(links)
       .join("line")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "8 8");
 
-    const node = svg.append("g")
+    const animateLinks = () => {
+      link
+        .attr("stroke-dashoffset", 16)
+        .transition()
+        .duration(1600)
+        .ease(d3.easeLinear)
+        .attr("stroke-dashoffset", 0)
+        .on("end", animateLinks);
+    };
+
+    animateLinks();
+
+    const node = rootLayer.append("g")
       .selectAll("g")
-      .data(data.nodes)
+      .data(nodes)
       .join("g")
-      .call(drag(simulation) as any);
-
-    node.append("circle")
-      .attr("r", (d: any) => d.type === 'Goal' ? 12 : 8)
-      .attr("fill", (d: any) => {
-        switch (d.type) {
-          case 'Goal': return 'hsl(var(--primary))';
-          case 'Skill': return 'hsl(var(--accent))';
-          case 'Topic': return '#f59e0b';
-          default: return '#9ca3af';
-        }
+      .style('cursor', 'pointer')
+      .on('click', (_, datum) => {
+        onSelectNode(datum.id);
       });
+
+    const applyDrag = drag(simulation) as unknown as (selection: d3.Selection<d3.BaseType | SVGGElement, SimNode, SVGGElement, unknown>) => void;
+    node.call(applyDrag);
+
+    const circles = node.append("circle")
+      .attr("r", (datum) => datum.id === selectedNodeId ? 14 : 9)
+      .attr("fill", (datum) => NODE_COLOR_BY_TYPE[datum.type] ?? 'hsl(var(--muted-foreground))')
+      .attr("stroke", (datum) => weakNodeIds.has(datum.id) ? '#ff4d6d' : 'rgba(255,255,255,0.5)')
+      .attr("stroke-width", (datum) => weakNodeIds.has(datum.id) ? 2.6 : 1.4)
+      .style("filter", "drop-shadow(0 0 8px rgba(108,182,255,0.7))");
+
+    node
+      .on('mouseenter', function () {
+        d3.select(this).select('circle').transition().duration(160).attr('r', 15);
+      })
+      .on('mouseleave', function (_, datum) {
+        d3.select(this).select('circle').transition().duration(180).attr('r', datum.id === selectedNodeId ? 14 : 9);
+      });
+
+    const pulse = () => {
+      circles
+        .transition()
+        .duration(1000)
+        .attr('opacity', 0.7)
+        .transition()
+        .duration(1000)
+        .attr('opacity', 1)
+        .on('end', pulse);
+    };
+
+    pulse();
 
     node.append("text")
       .attr("x", 12)
       .attr("y", 4)
-      .text((d: any) => d.label)
+      .text((datum) => datum.title)
       .style("font-size", "12px")
       .style("font-family", "Inter, sans-serif")
-      .style("fill", "#374151");
+      .style("fill", "hsl(var(--foreground))")
+      .style("font-size", "11px");
 
     simulation.on("tick", () => {
       link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
+        .attr("x1", (datum) => (datum.source as SimNode).x ?? 0)
+        .attr("y1", (datum) => (datum.source as SimNode).y ?? 0)
+        .attr("x2", (datum) => (datum.target as SimNode).x ?? 0)
+        .attr("y2", (datum) => (datum.target as SimNode).y ?? 0);
 
       node
-        .attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+        .attr("transform", (datum) => `translate(${datum.x ?? 0},${datum.y ?? 0})`);
     });
 
-    function drag(simulation: any) {
-      function dragstarted(event: any) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+    function drag(simulationRef: d3.Simulation<SimNode, SimLink>) {
+      function dragstarted(event: d3.D3DragEvent<Element, SimNode, SimNode>) {
+        if (!event.active) simulationRef.alphaTarget(0.3).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
       }
 
-      function dragged(event: any) {
+      function dragged(event: d3.D3DragEvent<Element, SimNode, SimNode>) {
         event.subject.fx = event.x;
         event.subject.fy = event.y;
       }
 
-      function dragended(event: any) {
-        if (!event.active) simulation.alphaTarget(0);
+      function dragended(event: d3.D3DragEvent<Element, SimNode, SimNode>) {
+        if (!event.active) simulationRef.alphaTarget(0);
         event.subject.fx = null;
         event.subject.fy = null;
       }
 
-      return d3.drag()
+      return d3.drag<Element, SimNode>()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended);
     }
 
-    return () => simulation.stop();
-  }, [data]);
+    return () => {
+      simulation.stop();
+    };
+  }, [data, onSelectNode, selectedNodeId, weakClusters]);
 
   return (
-    <div className="w-full h-full bg-white rounded-xl border border-border overflow-hidden relative">
+    <div className="w-full h-full bg-card/60 backdrop-blur-xl rounded-2xl border border-border overflow-hidden relative">
       <svg ref={svgRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-      <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-border text-xs space-y-2">
+      <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm p-3 rounded-lg border border-border text-xs space-y-2">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-primary" /> <span>Goal</span>
+          <div className="w-3 h-3 rounded-full bg-blue-400" /> <span>Skill</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-accent" /> <span>Skill</span>
+          <div className="w-3 h-3 rounded-full bg-purple-400" /> <span>Topic</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-amber-500" /> <span>Topic</span>
+          <div className="w-3 h-3 rounded-full bg-cyan-300" /> <span>Goal</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-muted-foreground" /> <span>Note</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-destructive" /> <span>Weak cluster</span>
         </div>
       </div>
     </div>

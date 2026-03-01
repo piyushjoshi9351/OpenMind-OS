@@ -1,66 +1,182 @@
 "use client"
 
-import { MOCK_METRICS } from '@/lib/api-mock';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { GuidedEmptyState } from '@/components/dashboard/GuidedEmptyState';
+import { DataFreshnessIndicator } from '@/components/dashboard/DataFreshnessIndicator';
+import { ErrorFallbackState } from '@/components/dashboard/ErrorFallbackState';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
-  LineChart, 
-  Line, 
+  AreaChart,
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  AreaChart,
-  Area
 } from 'recharts';
-import { Brain, Zap, Flame, Battery, TrendingUp, AlertTriangle } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Brain, Sparkles, Zap, Flame, Battery, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-
-const performanceData = [
-  { time: '08:00', focus: 30 },
-  { time: '10:00', focus: 85 },
-  { time: '12:00', focus: 60 },
-  { time: '14:00', focus: 75 },
-  { time: '16:00', focus: 50 },
-  { time: '18:00', focus: 40 },
-  { time: '20:00', focus: 65 },
-];
+import { useCognitiveAnalytics, useRealtimeGoals, useRealtimeTasks } from '@/lib/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
+import { uxCopy } from '@/lib/ux-copy';
+import { useUser } from '@/firebase';
+import { trackFeatureEvent } from '@/lib/event-tracking';
 
 export default function InsightsPage() {
+  const router = useRouter();
+  const { user } = useUser();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { goals, loading: goalsLoading, error: goalsError } = useRealtimeGoals();
+  const { tasks, loading: tasksLoading, error: tasksError } = useRealtimeTasks();
+  const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
+
+  const performanceData = useMemo(() => {
+    return dashboardSnapshot.weeklyProductivity.map((item, index) => ({
+      time: item.day,
+      focus: Math.max(15, Math.min(100, dashboardSnapshot.focusScore + (index - 3) * 6)),
+    }));
+  }, [dashboardSnapshot.focusScore, dashboardSnapshot.weeklyProductivity]);
+
+  if (goalsLoading || tasksLoading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <Skeleton className="h-8 w-52" />
+        <p className="text-xs text-muted-foreground">{uxCopy.loading.syncing}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-32 w-full" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (goalsError || tasksError) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <ErrorFallbackState message={goalsError ?? tasksError ?? 'Unable to load insights right now.'} onAction={() => router.refresh()} />
+      </div>
+    );
+  }
+
+  const hasInsightData = tasks.length > 0 || goals.length > 0;
+  const shortRecommendations = [
+    dashboardSnapshot.burnoutRisk > 40 ? 'Reduce parallel tasks for 48h to recover cognitive load.' : 'Current load is stable; keep deep-work cadence.',
+    advancedAnalytics.delayRatio > 0.25 ? 'Start day with one overdue task to reduce delay ratio.' : 'Delay ratio is healthy; maintain closing rhythm.',
+    dashboardSnapshot.focusScore < 60 ? 'Add one distraction-free block of 60 minutes today.' : 'Focus quality is high; preserve the current routine.',
+  ];
+
+  const trendChips = [
+    {
+      label: 'Focus Trend',
+      value: `${dashboardSnapshot.focusScore}%`,
+      up: dashboardSnapshot.focusScore >= 60,
+    },
+    {
+      label: 'Recovery Trend',
+      value: `${Math.round((1 - advancedAnalytics.delayRatio) * 100)}%`,
+      up: advancedAnalytics.delayRatio < 0.3,
+    },
+    {
+      label: 'Learning Trend',
+      value: `${advancedAnalytics.learningAcceleration.toFixed(2)}x`,
+      up: advancedAnalytics.learningAcceleration >= 1,
+    },
+  ];
+
+  if (!hasInsightData) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <PageHeader
+          title="Cognitive Insights"
+          subtitle="Deep analysis of your productivity and mental performance patterns."
+          primaryAction={<Button onClick={() => router.push('/goals')}>Create First Goal</Button>}
+          secondaryAction={<Button variant="outline" onClick={() => router.push('/tasks')}>Open Tasks</Button>}
+        />
+        <GuidedEmptyState
+          title="No insight data yet"
+          description="Create your first goal and complete at least one task. OpenMind will then generate focus, consistency, and recovery insights automatically."
+          primaryLabel="Generate First Insight"
+          onPrimaryAction={() => router.push('/goals')}
+          secondaryLabel="Add First Task"
+          onSecondaryAction={() => router.push('/tasks')}
+          icon={<Sparkles className="h-5 w-5" />}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-headline font-bold">Cognitive Insights</h1>
-        <p className="text-muted-foreground mt-1">Deep analysis of your productivity and mental performance patterns.</p>
-      </div>
+      <PageHeader
+        title="Cognitive Insights"
+        subtitle="Scannable intelligence for focus, consistency, and recovery."
+        primaryAction={<Button onClick={() => {
+          if (user) {
+            void trackFeatureEvent({ userId: user.uid, eventName: 'insights_refreshed', page: '/insights' });
+          }
+          router.refresh();
+        }}>Refresh Insights</Button>}
+        secondaryAction={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowAdvanced((current) => {
+                const next = !current;
+                if (user) {
+                  void trackFeatureEvent({ userId: user.uid, eventName: next ? 'advanced_insights_opened' : 'advanced_insights_closed', page: '/insights' });
+                }
+                return next;
+              });
+            }}>
+              {showAdvanced ? 'Hide Advanced Analytics' : 'Show Advanced Analytics'}
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/tasks')}>Open Tasks</Button>
+          </div>
+        }
+      />
+
+      <DataFreshnessIndicator updatedAt={advancedAnalytics.metrics.updatedAt} />
+
+      {showAdvanced && (
+        <div className="flex flex-wrap gap-2">
+          {trendChips.map((chip) => (
+            <Badge key={chip.label} variant="outline" className="px-3 py-1.5 gap-1">
+              {chip.up ? <ArrowUpRight className="h-3.5 w-3.5 text-cyan-300" /> : <ArrowDownRight className="h-3.5 w-3.5 text-rose-300" />}
+              <span>{chip.label}: {chip.value}</span>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
           title="Consistency Score" 
-          value={`${MOCK_METRICS.consistencyScore}%`} 
-          icon={<Flame className="h-6 w-6 text-orange-500" />}
+          value={`${dashboardSnapshot.consistencyScore}%`} 
+          icon={<Flame className="h-6 w-6 text-cyan-300" />}
         />
         <StatsCard 
           title="Focus Density" 
-          value="High" 
-          icon={<Zap className="h-6 w-6 text-yellow-500" />}
-          description="Avg focus session: 52m"
+          value={`${dashboardSnapshot.focusScore}%`} 
+          icon={<Zap className="h-6 w-6 text-blue-300" />}
+          description="Dynamic score based on completed tasks"
         />
         <StatsCard 
           title="Cognitive Load" 
-          value="Medium" 
-          icon={<Brain className="h-6 w-6 text-blue-500" />}
+          value={advancedAnalytics.delayRatio > 0.35 ? 'High' : 'Medium'} 
+          icon={<Brain className="h-6 w-6 text-purple-300" />}
         />
         <StatsCard 
           title="Recovery Rate" 
-          value="92%" 
-          icon={<Battery className="h-6 w-6 text-emerald-500" />}
+          value={`${Math.round((1 - advancedAnalytics.delayRatio) * 100)}%`} 
+          icon={<Battery className="h-6 w-6 text-cyan-300" />}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2 border-none shadow-sm">
+        <Card className={showAdvanced ? 'lg:col-span-2 om-card' : 'lg:col-span-3 om-card'}>
           <CardHeader>
             <CardTitle className="font-headline">Focus Window Analysis</CardTitle>
             <CardDescription>Average focus score by time of day over the last 30 days.</CardDescription>
@@ -75,7 +191,7 @@ export default function InsightsPage() {
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(123, 177, 255, 0.2)" />
                   <XAxis dataKey="time" axisLine={false} tickLine={false} />
                   <YAxis axisLine={false} tickLine={false} />
                   <Tooltip />
@@ -93,42 +209,56 @@ export default function InsightsPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="border-none shadow-sm bg-primary text-primary-foreground">
-            <CardHeader>
-              <CardTitle className="text-lg font-headline flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" /> Learning Velocity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold font-headline">1.4x</div>
-              <p className="text-sm opacity-80 mt-2">You are mastering new topics 40% faster than your personal baseline this month.</p>
-              <div className="mt-6 pt-6 border-t border-white/20">
-                <p className="text-xs uppercase tracking-wider font-bold opacity-60">Top Growing Skill</p>
-                <p className="text-lg font-medium">Deep Learning</p>
-              </div>
-            </CardContent>
-          </Card>
+        {showAdvanced && (
+          <div className="space-y-6">
+            <Card className="om-card bg-gradient-to-br from-primary/35 to-accent/20 text-primary-foreground">
+              <CardHeader>
+                <CardTitle className="text-lg font-headline flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" /> Learning Velocity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold font-headline">{advancedAnalytics.metrics.learningVelocity.toFixed(1)}x</div>
+                <p className="text-sm opacity-80 mt-2">Learning acceleration score: {advancedAnalytics.learningAcceleration.toFixed(2)} with current execution patterns.</p>
+                <div className="mt-6 pt-6 border-t border-white/20">
+                  <p className="text-xs uppercase tracking-wider font-bold opacity-60">Top Growing Skill</p>
+                  <p className="text-lg font-medium">Adaptive Problem Solving</p>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="border-none shadow-sm bg-rose-50 border border-rose-100">
-            <CardHeader>
-              <CardTitle className="text-lg font-headline text-rose-900 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-rose-600" /> Burnout Risk
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-rose-800">Risk Factor</span>
-                <span className="text-sm font-bold text-rose-900">{MOCK_METRICS.burnoutRisk}%</span>
-              </div>
-              <Progress value={MOCK_METRICS.burnoutRisk} className="h-2 bg-rose-200" />
-              <p className="text-xs text-rose-700 mt-4 leading-relaxed">
-                Your late-night activity has increased. We recommend adding a "Rest Block" between 10:00 PM and 11:30 PM.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="om-card border border-cyan-300/20 bg-gradient-to-br from-[#11162a] to-[#16122b]">
+              <CardHeader>
+                <CardTitle className="text-lg font-headline text-cyan-100 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-purple-300" /> Burnout Risk
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-cyan-100/80">Risk Factor</span>
+                  <span className="text-sm font-bold text-cyan-100">{dashboardSnapshot.burnoutRisk}%</span>
+                </div>
+                <Progress value={dashboardSnapshot.burnoutRisk} className="h-2 bg-primary/15" />
+                <p className="text-xs text-cyan-100/75 mt-4 leading-relaxed">
+                  Delay ratio is {(advancedAnalytics.delayRatio * 100).toFixed(0)}%. Consider inserting recovery blocks if risk exceeds 40%.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
+
+      <Card className="om-card">
+        <CardHeader>
+          <CardTitle className="text-base font-headline">AI Recommendations</CardTitle>
+          <CardDescription>Short actions based on your current cognitive signals.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {shortRecommendations.map((item) => (
+            <p key={item} className="text-sm text-muted-foreground">• {item}</p>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
