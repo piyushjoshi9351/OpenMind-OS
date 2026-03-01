@@ -1,24 +1,21 @@
 import {
   addDoc,
   collection,
-  collectionGroup,
   doc,
   onSnapshot,
   orderBy,
   query,
   updateDoc,
-  where,
   writeBatch,
   type DocumentData,
   type Firestore,
-  type Query,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import type { Subtask, TaskModel } from '@/types';
 
 const COLLECTION_NAME = 'tasks';
 
-const userTasksCollectionGroup = (firestore: Firestore) => collectionGroup(firestore, COLLECTION_NAME);
+const userGoalsCollection = (firestore: Firestore, userId: string) => collection(firestore, 'users', userId, 'goals');
 const goalTasksCollection = (firestore: Firestore, userId: string, goalId: string) => collection(firestore, 'users', userId, 'goals', goalId, COLLECTION_NAME);
 const taskDocRef = (firestore: Firestore, userId: string, goalId: string, taskId: string) => doc(firestore, 'users', userId, 'goals', goalId, COLLECTION_NAME, taskId);
 
@@ -52,25 +49,67 @@ export interface TaskCreateInput {
 
 export const taskService = {
   subscribeByUser(firestore: Firestore, userId: string, onData: (tasks: TaskModel[]) => void, onError: (error: Error) => void) {
-    const tasksQuery = query(userTasksCollectionGroup(firestore), where('userId', '==', userId), orderBy('createdAt', 'desc'));
-    return onSnapshot(
-      tasksQuery,
-      (snapshot) => {
-        const mapped = snapshot.docs
-          .map(toTask)
-          .sort((leftTask, rightTask) => {
-            if (leftTask.completed !== rightTask.completed) {
-              return Number(leftTask.completed) - Number(rightTask.completed);
-            }
-            if (leftTask.order !== rightTask.order) {
-              return leftTask.order - rightTask.order;
-            }
-            return new Date(leftTask.deadline).getTime() - new Date(rightTask.deadline).getTime();
-          });
-        onData(mapped);
+    const goalTaskUnsubs = new Map<string, () => void>();
+    const tasksByGoal = new Map<string, TaskModel[]>();
+
+    const emitTasks = () => {
+      const mapped = Array.from(tasksByGoal.values())
+        .flat()
+        .sort((leftTask, rightTask) => {
+          if (leftTask.completed !== rightTask.completed) {
+            return Number(leftTask.completed) - Number(rightTask.completed);
+          }
+          if (leftTask.order !== rightTask.order) {
+            return leftTask.order - rightTask.order;
+          }
+          return new Date(leftTask.deadline).getTime() - new Date(rightTask.deadline).getTime();
+        });
+      onData(mapped);
+    };
+
+    const goalsQuery = query(userGoalsCollection(firestore, userId), orderBy('createdAt', 'desc'));
+
+    const goalsUnsub = onSnapshot(
+      goalsQuery,
+      (goalsSnapshot) => {
+        const goalIds = new Set(goalsSnapshot.docs.map((goalSnapshot) => goalSnapshot.id));
+
+        goalTaskUnsubs.forEach((unsubscribe, goalId) => {
+          if (!goalIds.has(goalId)) {
+            unsubscribe();
+            goalTaskUnsubs.delete(goalId);
+            tasksByGoal.delete(goalId);
+          }
+        });
+
+        goalsSnapshot.docs.forEach((goalSnapshot) => {
+          const goalId = goalSnapshot.id;
+          if (goalTaskUnsubs.has(goalId)) {
+            return;
+          }
+
+          const tasksQuery = query(goalTasksCollection(firestore, userId, goalId), orderBy('createdAt', 'desc'));
+          const unsubscribe = onSnapshot(
+            tasksQuery,
+            (tasksSnapshot) => {
+              tasksByGoal.set(goalId, tasksSnapshot.docs.map(toTask));
+              emitTasks();
+            },
+            (error) => onError(error),
+          );
+
+          goalTaskUnsubs.set(goalId, unsubscribe);
+        });
+
+        emitTasks();
       },
       (error) => onError(error),
     );
+
+    return () => {
+      goalsUnsub();
+      goalTaskUnsubs.forEach((unsubscribe) => unsubscribe());
+    };
   },
 
   async create(firestore: Firestore, input: TaskCreateInput) {
