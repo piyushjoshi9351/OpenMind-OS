@@ -6,15 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePathname } from 'next/navigation';
 
-const toModuleContext = (pathname: string): { category: 'Execution' | 'Intelligence' | 'Knowledge' | 'System'; detail: string } => {
-  if (pathname === '/dashboard') return { category: 'Execution', detail: 'Live Monitoring' };
-  if (pathname === '/tasks') return { category: 'Execution', detail: 'Focus: Medium' };
-  if (pathname === '/goals') return { category: 'Execution', detail: 'Goal Planning' };
-  if (pathname === '/roadmap') return { category: 'Execution', detail: 'Plan Optimization' };
-  if (pathname === '/insights') return { category: 'Intelligence', detail: 'Pattern Analysis' };
-  if (pathname === '/analytics') return { category: 'Intelligence', detail: 'Signal Tracking' };
-  if (pathname === '/graph') return { category: 'Knowledge', detail: 'Semantic Mapping' };
-  return { category: 'System', detail: 'Focus: Medium' };
+const toModuleContext = (pathname: string): { category: 'Execution' | 'Intelligence' | 'Knowledge' | 'Analytics' | 'System' } => {
+  if (pathname === '/dashboard' || pathname === '/tasks' || pathname === '/goals' || pathname === '/roadmap') return { category: 'Execution' };
+  if (pathname === '/insights') return { category: 'Intelligence' };
+  if (pathname === '/analytics') return { category: 'Analytics' };
+  if (pathname === '/graph') return { category: 'Knowledge' };
+  return { category: 'System' };
 };
 
 type SyncStatus = 'synced' | 'syncing' | 'disconnected';
@@ -119,6 +116,9 @@ export function SystemTopBar() {
     if (context.category === 'Knowledge') {
       return 'border-indigo-300/25 bg-indigo-500/10 text-indigo-200/85';
     }
+    if (context.category === 'Analytics') {
+      return 'border-emerald-300/25 bg-emerald-500/10 text-emerald-200/85';
+    }
     return 'border-slate-300/20 bg-slate-500/10 text-slate-200/85';
   }, [context.category]);
 
@@ -150,7 +150,6 @@ export function SystemTopBar() {
             <span className="mr-1 inline-flex h-1.5 w-1.5 rounded-full bg-current/70" />
             {context.category}
           </Badge>
-          <span className="text-cyan-100/62">{context.detail}</span>
           <Badge className={`px-1.5 py-0 text-[10px] ${syncBadge.className}`}>
             <span className={`mr-1.5 inline-flex h-1.5 w-1.5 rounded-full ${syncBadge.dotClassName}`} />
             {syncBadge.label}
@@ -174,7 +173,6 @@ export function SystemTopBar() {
           <div className="hidden sm:flex items-center gap-1 rounded-full border border-cyan-300/25 bg-cyan-500/10 px-2 py-1 text-[11px] text-cyan-200">
             <HeartPulse className="h-3.5 w-3.5" />
             <span className="inline-flex h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
-            Live
           </div>
 
           <Button
@@ -195,7 +193,7 @@ export function SystemTopBar() {
             className="h-8 border-cyan-300/30 bg-black/20 hover:bg-black/30 text-cyan-100 rounded-full px-3"
           >
             <Command className="h-3.5 w-3.5 mr-1" />
-            <span className="hidden md:inline">Command</span>
+            <span className="hidden md:inline">AI Center</span>
             <span className="ml-1 text-[10px] text-muted-foreground hidden lg:inline">⌘/Ctrl+K</span>
           </Button>
 

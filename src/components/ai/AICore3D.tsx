@@ -9,9 +9,10 @@ interface AICore3DProps {
   activityLevel: number;
   productivity: number;
   syncActive?: boolean;
+  completionFlashKey?: number;
 }
 
-function CoreModel({ activityLevel, productivity, syncActive = false }: { activityLevel: number; productivity: number; syncActive?: boolean }) {
+function CoreModel({ activityLevel, productivity, syncActive = false, completionFlashKey = 0 }: { activityLevel: number; productivity: number; syncActive?: boolean; completionFlashKey?: number }) {
   const coreRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
   const orbitRef = useRef<THREE.Mesh>(null);
@@ -21,6 +22,8 @@ function CoreModel({ activityLevel, productivity, syncActive = false }: { activi
   const sparkParticlesRef = useRef<THREE.Points>(null);
   const coreMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const flashBoostRef = useRef(0);
+  const lastFlashKeyRef = useRef(completionFlashKey);
   const baseScale = 1 + activityLevel / 260;
   const activityFactor = Math.max(0.15, Math.min(1.2, activityLevel / 100));
   const productivityFactor = Math.max(0, Math.min(1, productivity));
@@ -65,7 +68,14 @@ function CoreModel({ activityLevel, productivity, syncActive = false }: { activi
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const pulseSpeed = 1.1 + activityFactor * 1.2;
+        if (lastFlashKeyRef.current !== completionFlashKey) {
+          lastFlashKeyRef.current = completionFlashKey;
+          flashBoostRef.current = 0.9;
+        }
+
+        flashBoostRef.current = Math.max(0, flashBoostRef.current - 0.03);
+
+    const pulseSpeed = 1.1 + activityFactor * 0.95 + productivityFactor * 1.05;
     const pulse = baseScale + Math.sin(t * pulseSpeed) * 0.05;
     const flicker = (Math.random() - 0.5) * 0.09;
 
@@ -85,7 +95,7 @@ function CoreModel({ activityLevel, productivity, syncActive = false }: { activi
     }
 
     if (ringMaterialRef.current) {
-      ringMaterialRef.current.emissiveIntensity = 0.52 + productivityFactor * 0.78 + flicker * 0.35;
+      ringMaterialRef.current.emissiveIntensity = 0.52 + productivityFactor * 0.78 + flashBoostRef.current + flicker * 0.35;
     }
 
     if (orbitRef.current) {
@@ -160,11 +170,11 @@ function CoreModel({ activityLevel, productivity, syncActive = false }: { activi
   );
 }
 
-export function AICore3D({ activityLevel, productivity, syncActive = false }: AICore3DProps) {
+export function AICore3D({ activityLevel, productivity, syncActive = false, completionFlashKey = 0 }: AICore3DProps) {
   return (
     <div className="h-[360px] w-full">
       <Canvas dpr={[1, 1.6]} camera={{ position: [0, 0, 5], fov: 45 }}>
-        <CoreModel activityLevel={activityLevel} productivity={productivity} syncActive={syncActive} />
+        <CoreModel activityLevel={activityLevel} productivity={productivity} syncActive={syncActive} completionFlashKey={completionFlashKey} />
       </Canvas>
     </div>
   );

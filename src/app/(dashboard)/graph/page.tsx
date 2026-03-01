@@ -71,7 +71,18 @@ export default function GraphPage() {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
         <Skeleton className="h-8 w-80" />
-        <Skeleton className="h-[580px] w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 p-4 bg-black/20">
+          <Skeleton className="h-[580px] w-full" />
+          <div className="absolute left-6 bottom-6 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-black/45 px-3 py-1 text-[11px] text-cyan-100/85">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" />
+            Initializing graph engine...
+          </div>
+        </div>
       </div>
     );
   }

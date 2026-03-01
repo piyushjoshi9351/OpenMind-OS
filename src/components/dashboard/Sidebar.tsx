@@ -85,7 +85,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-[4.25rem] hover:w-64 transition-[width] duration-300 bg-black/20 border-r border-white/5 backdrop-blur-md">
+    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-[4.25rem] hover:w-64 transition-[width] duration-300 bg-black/20 border-r border-white/5 backdrop-blur-md sidebar-depth">
       <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-cyan-400/5 via-cyan-300/75 to-purple-400/8" />
       <div className="pointer-events-none absolute inset-0 sidebar-hover-glow opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-500" />
 

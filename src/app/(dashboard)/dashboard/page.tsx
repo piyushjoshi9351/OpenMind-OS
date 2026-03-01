@@ -64,6 +64,9 @@ export default function Dashboard() {
   const [energy, setEnergy] = useState<EnergyLevel>('Medium');
   const [moodMode, setMoodMode] = useState<'Auto' | 'Calm' | 'Focus' | 'Hyper'>('Auto');
   const [syncPulseActive, setSyncPulseActive] = useState(false);
+  const [coreOverlayOpen, setCoreOverlayOpen] = useState(false);
+  const [coreRippleKey, setCoreRippleKey] = useState(0);
+  const [completionFlashKey, setCompletionFlashKey] = useState(0);
   const isMobile = useIsMobile();
   const prefersReducedMotion = useReducedMotion();
   const { goals, loading: goalsLoading, error: goalsError } = useRealtimeGoals();
@@ -73,6 +76,7 @@ export default function Dashboard() {
   const intelligence = useIntelligenceAddons(goals, tasks, energy);
   const { assistant, loading: memoryLoading } = useMemoryAssistant(goals, tasks);
   const goalVelocityRef = useRef<{ avgProgress: number; at: number } | null>(null);
+  const completedTasksRef = useRef(0);
 
   useEffect(() => {
     if (!user) {
@@ -177,6 +181,15 @@ export default function Dashboard() {
     return 'bg-[radial-gradient(circle_at_50%_20%,rgba(80,120,255,0.2),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(150,84,255,0.18),transparent_35%)]';
   }, [activeMood]);
 
+  const completedTasks = tasks.filter((task) => task.completed).length;
+
+  useEffect(() => {
+    if (completedTasks > completedTasksRef.current) {
+      setCompletionFlashKey((current) => current + 1);
+    }
+    completedTasksRef.current = completedTasks;
+  }, [completedTasks]);
+
   const isLoading = goalsLoading || tasksLoading;
 
   if (isLoading) {
@@ -203,7 +216,6 @@ export default function Dashboard() {
     );
   }
 
-  const completedTasks = tasks.filter((task) => task.completed).length;
   const completionRatio = tasks.length ? completedTasks / tasks.length : 0;
   const activityLevel = Math.min(
     100,
@@ -229,6 +241,10 @@ export default function Dashboard() {
       : uiTone === 'active'
         ? 'bg-[radial-gradient(circle_at_22%_16%,rgba(76,170,255,0.18),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(145,94,255,0.17),transparent_35%)]'
         : 'bg-[radial-gradient(circle_at_22%_16%,rgba(64,144,225,0.12),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(118,92,195,0.11),transparent_35%)]';
+  const proactiveSuggestions = [
+    ...(tasks.length === 0 ? ['No tasks detected. Create one execution task to activate AI planning guidance.'] : []),
+    ...(dashboardSnapshot.focusScore < 50 ? ['Focus is low. Activate Deep Focus and complete one short task to recover momentum.'] : []),
+  ];
 
   if (hasNoData) {
     return (
@@ -263,6 +279,7 @@ export default function Dashboard() {
       <div className="absolute inset-0 animated-grid opacity-30 pointer-events-none" />
       <div className="absolute inset-0 beam-sweep pointer-events-none" />
       <div className="absolute inset-0 noise-overlay opacity-30 pointer-events-none" />
+      <div className="absolute inset-0 grain-overlay pointer-events-none" />
       <div className="absolute inset-0 radial-core-light pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative z-10 p-6 lg:p-8 space-y-6">
@@ -315,8 +332,19 @@ export default function Dashboard() {
             >
               Activate Deep Focus
             </RippleButton>
+            <Button variant="outline" className="border-cyan-300/25" onClick={() => window.dispatchEvent(new Event('om:command-palette-open'))}>Open AI Command Center</Button>
           </div>
         </motion.div>
+
+        {!!proactiveSuggestions.length && (
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {proactiveSuggestions.map((item) => (
+              <Card key={item} className="om-card-primary">
+                <CardContent className="p-3 text-sm text-cyan-100/90">{item}</CardContent>
+              </Card>
+            ))}
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 orbit-layout">
           <motion.section variants={itemVariants} className="xl:col-span-3 space-y-4 xl:translate-y-2">
@@ -349,7 +377,17 @@ export default function Dashboard() {
             <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-cyan-400/10 blur-3xl depth-blur" />
             <div className="pointer-events-none absolute -inset-10 rounded-[2.2rem] bg-[radial-gradient(circle_at_50%_45%,rgba(118,178,255,0.14),transparent_55%)] blur-[72px]" />
             <TiltPanel inverse>
-            <Card className="glass-panel neon-glow rounded-2xl overflow-hidden inner-shadow-panel micro-tilt">
+            <Card className="glass-panel neon-glow rounded-2xl overflow-hidden inner-shadow-panel micro-tilt relative"
+              onMouseEnter={() => setCoreRippleKey((current) => current + 1)}
+              onClick={() => setCoreOverlayOpen(true)}
+            >
+              <motion.span
+                key={coreRippleKey}
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-cyan-300/45"
+                initial={{ opacity: 0.42, scale: 0.97 }}
+                animate={{ opacity: 0, scale: 1.08 }}
+                transition={{ duration: 0.62, ease: 'easeOut' }}
+              />
               <CardHeader className="pb-2 pt-5">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <BrainCircuit className="h-5 w-5 text-primary" /> Adaptive AI Core
@@ -364,9 +402,27 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ) : (
-                  <AICore3D activityLevel={activityLevel} productivity={completionRatio} syncActive={syncPulseActive} />
+                  <AICore3D activityLevel={activityLevel} productivity={completionRatio} syncActive={syncPulseActive} completionFlashKey={completionFlashKey} />
                 )}
               </CardContent>
+
+              {coreOverlayOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute right-4 top-4 z-20 rounded-xl border border-cyan-300/25 bg-black/75 backdrop-blur-md p-3 w-[220px]"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <p className="text-xs uppercase tracking-[0.14em] text-cyan-100/85 mb-2">AI Core Quick Actions</p>
+                  <div className="space-y-2">
+                    <Button size="sm" variant="outline" className="w-full justify-start" onClick={() => window.dispatchEvent(new Event('om:command-palette-open'))}>Open Command Center</Button>
+                    <Button size="sm" variant="outline" className="w-full justify-start" onClick={() => router.push('/insights')}>Open Intelligence</Button>
+                    <Button size="sm" variant="ghost" className="w-full justify-start" onClick={() => setCoreOverlayOpen(false)}>Close</Button>
+                  </div>
+                </motion.div>
+              )}
             </Card>
             </TiltPanel>
 

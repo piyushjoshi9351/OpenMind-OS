@@ -21,6 +21,15 @@ export default function DashboardLayout({
   const { isLoading } = useProtectedRoute(['user', 'admin']);
   const isMobile = useIsMobile();
   const pathname = usePathname();
+  const moduleAuraClass = pathname.startsWith('/insights')
+    ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(163,107,255,0.16),transparent_36%)]'
+    : pathname.startsWith('/analytics')
+      ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(92,210,146,0.15),transparent_36%)]'
+    : pathname.startsWith('/tasks') || pathname.startsWith('/goals') || pathname.startsWith('/roadmap') || pathname.startsWith('/dashboard')
+      ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(88,154,255,0.17),transparent_36%)]'
+      : pathname.startsWith('/graph')
+        ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(86,216,236,0.15),transparent_36%)]'
+        : 'bg-[radial-gradient(circle_at_62%_14%,rgba(106,214,154,0.14),transparent_36%)]';
 
   if (isLoading) {
     return (
@@ -54,6 +63,8 @@ export default function DashboardLayout({
           <div className="pointer-events-none absolute inset-0 animated-grid opacity-35" />
           <div className="pointer-events-none absolute inset-0 beam-sweep" />
           <div className="pointer-events-none absolute inset-0 noise-overlay opacity-40" />
+          <div className="pointer-events-none absolute inset-0 grain-overlay" />
+          <div className={`pointer-events-none absolute inset-0 ${moduleAuraClass}`} />
           <div className="pointer-events-none absolute -top-20 left-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="pointer-events-none absolute top-12 right-20 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl" />
           <div className="pointer-events-none absolute inset-0 radial-core-light" />
@@ -61,12 +72,17 @@ export default function DashboardLayout({
             <motion.div
               key={pathname}
               className="relative z-10"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
             >
               {children}
+              <footer className="mt-8 rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-[11px] text-muted-foreground/85 flex flex-wrap items-center justify-between gap-2">
+                <span>OpenMind OS v1.0</span>
+                <span>AI Engine: Running</span>
+                <span>Data Sync: Active</span>
+              </footer>
             </motion.div>
           </AnimatePresence>
         </main>

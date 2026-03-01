@@ -249,7 +249,10 @@ export default function InsightsPage() {
                     stroke="hsl(var(--primary))" 
                     strokeWidth={3} 
                     fillOpacity={1} 
-                    fill="url(#colorFocus)" 
+                    fill="url(#colorFocus)"
+                    isAnimationActive
+                    animationDuration={1700}
+                    animationEasing="ease-in-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
