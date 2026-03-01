@@ -69,6 +69,46 @@ export default function Dashboard() {
   const intelligence = useIntelligenceAddons(goals, tasks, energy);
   const { assistant, loading: memoryLoading } = useMemoryAssistant(goals, tasks);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const saved = window.localStorage.getItem('om-dashboard-mood-mode');
+    if (saved === 'Auto' || saved === 'Calm' || saved === 'Focus' || saved === 'Hyper') {
+      setMoodMode(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem('om-dashboard-mood-mode', moodMode);
+  }, [moodMode]);
+
+  const activeMood = useMemo(() => {
+    if (moodMode !== 'Auto') {
+      return moodMode;
+    }
+    if (energy === 'Low') {
+      return 'Calm';
+    }
+    if (energy === 'High') {
+      return 'Hyper';
+    }
+    return 'Focus';
+  }, [energy, moodMode]);
+
+  const moodOverlayClass = useMemo(() => {
+    if (activeMood === 'Calm') {
+      return 'bg-[radial-gradient(circle_at_25%_20%,rgba(46,165,255,0.14),transparent_42%),radial-gradient(circle_at_90%_0%,rgba(88,132,255,0.10),transparent_38%)]';
+    }
+    if (activeMood === 'Hyper') {
+      return 'bg-[radial-gradient(circle_at_25%_15%,rgba(103,180,255,0.24),transparent_36%),radial-gradient(circle_at_85%_0%,rgba(170,90,255,0.26),transparent_34%)]';
+    }
+    return 'bg-[radial-gradient(circle_at_50%_20%,rgba(80,120,255,0.2),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(150,84,255,0.18),transparent_35%)]';
+  }, [activeMood]);
+
   const isLoading = goalsLoading || tasksLoading;
 
   if (isLoading) {
@@ -130,46 +170,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const saved = window.localStorage.getItem('om-dashboard-mood-mode');
-    if (saved === 'Auto' || saved === 'Calm' || saved === 'Focus' || saved === 'Hyper') {
-      setMoodMode(saved);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    window.localStorage.setItem('om-dashboard-mood-mode', moodMode);
-  }, [moodMode]);
-
-  const activeMood = useMemo(() => {
-    if (moodMode !== 'Auto') {
-      return moodMode;
-    }
-    if (energy === 'Low') {
-      return 'Calm';
-    }
-    if (energy === 'High') {
-      return 'Hyper';
-    }
-    return 'Focus';
-  }, [energy, moodMode]);
-
-  const moodOverlayClass = useMemo(() => {
-    if (activeMood === 'Calm') {
-      return 'bg-[radial-gradient(circle_at_25%_20%,rgba(46,165,255,0.14),transparent_42%),radial-gradient(circle_at_90%_0%,rgba(88,132,255,0.10),transparent_38%)]';
-    }
-    if (activeMood === 'Hyper') {
-      return 'bg-[radial-gradient(circle_at_25%_15%,rgba(103,180,255,0.24),transparent_36%),radial-gradient(circle_at_85%_0%,rgba(170,90,255,0.26),transparent_34%)]';
-    }
-    return 'bg-[radial-gradient(circle_at_50%_20%,rgba(80,120,255,0.2),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(150,84,255,0.18),transparent_35%)]';
-  }, [activeMood]);
 
   const lowEndMode = isMobile || Boolean(prefersReducedMotion);
 
