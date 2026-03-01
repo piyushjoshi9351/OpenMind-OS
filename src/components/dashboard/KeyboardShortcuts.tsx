@@ -31,7 +31,11 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
+      const key = typeof event.key === 'string' ? event.key.toLowerCase() : '';
+
+      if (!key) {
+        return;
+      }
 
       if ((event.ctrlKey || event.metaKey) && key === 'k') {
         event.preventDefault();
@@ -42,7 +46,7 @@ export function KeyboardShortcuts() {
         return;
       }
 
-      if (event.shiftKey && event.key === '?') {
+      if (event.shiftKey && key === '?') {
         event.preventDefault();
         if (user) {
           void trackFeatureEvent({ userId: user.uid, eventName: 'shortcut_help_opened', page: pathname });

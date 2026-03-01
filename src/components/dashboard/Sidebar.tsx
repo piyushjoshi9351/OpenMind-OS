@@ -85,15 +85,16 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-20 hover:w-72 transition-[width] duration-300 bg-sidebar/70 border-r border-sidebar-border backdrop-blur-xl">
-      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-cyan-400/10 via-cyan-300/40 to-purple-400/10" />
+    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-[4.25rem] hover:w-64 transition-[width] duration-300 bg-transparent border-r border-white/5 backdrop-blur-md sidebar-neon-edge">
+      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-cyan-400/5 via-cyan-300/75 to-purple-400/8" />
+      <div className="pointer-events-none absolute inset-0 sidebar-hover-glow opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-500" />
 
       <div className="flex h-full w-full flex-col">
-        <div className="px-4 py-5 flex items-center gap-3 min-h-[76px]">
+        <div className="px-3 py-5 flex items-center gap-3 min-h-[76px]">
           <div className="bg-primary/20 border border-primary/40 p-2 rounded-xl neon-glow">
             <Image src="/openmind-logo.svg" alt="OpenMind OS" width={24} height={24} className="h-6 w-6" priority />
           </div>
-          <div className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+          <div className="opacity-0 -translate-x-2 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 transition-all duration-250 whitespace-nowrap">
             <p className="font-headline text-lg font-bold tracking-tight">OpenMind OS</p>
             <p className="text-[11px] text-muted-foreground">Smart Dock</p>
           </div>
@@ -103,7 +104,7 @@ export function Sidebar() {
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1.5">
               <div className="h-px mx-2 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent opacity-70" />
-              <p className="px-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+              <p className="px-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground opacity-0 -translate-x-2 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 transition-all duration-200">
                 {section.title}
               </p>
               {section.items.map((item) => (
@@ -113,17 +114,17 @@ export function Sidebar() {
                   aria-label={`Go to ${item.name}`}
                   aria-current={pathname === item.href ? 'page' : undefined}
                   className={cn(
-                    'relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    'relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 nav-glow',
                     pathname === item.href
                       ? 'bg-primary/20 text-cyan-100 border border-cyan-300/30 shadow-[0_0_20px_rgba(88,177,255,0.25)]'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 border border-transparent',
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/35 border border-transparent',
                   )}
                 >
                   <item.icon className={cn(
                     'h-5 w-5 shrink-0',
                     pathname === item.href ? 'text-cyan-200' : 'text-muted-foreground group-hover/sidebar:text-cyan-200',
                   )} />
-                  <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  <span className="opacity-0 -translate-x-1 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 transition-all duration-200 whitespace-nowrap">
                     {item.name}
                   </span>
                   {pathname === item.href && (
@@ -137,11 +138,15 @@ export function Sidebar() {
 
         <div className="p-3 border-t border-sidebar-border/70 space-y-2">
           <Link href="/profile" aria-label="Open profile settings">
-            <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-sidebar-accent/50 cursor-pointer transition-colors border border-white/10 bg-black/20">
+            <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-sidebar-accent/40 cursor-pointer transition-colors border border-white/10 bg-black/10 nav-glow">
               <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white shrink-0">
-                {userInitials}
+                {user?.photoURL ? (
+                  <Image src={user.photoURL} alt="User avatar" width={36} height={36} className="h-9 w-9 rounded-full object-cover" unoptimized />
+                ) : (
+                  userInitials
+                )}
               </div>
-              <div className="min-w-0 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+              <div className="min-w-0 opacity-0 -translate-x-1 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 transition-all duration-200">
                 <p className="text-sm font-medium truncate">{user?.displayName ?? 'OpenMind User'}</p>
                 <p className="text-xs text-muted-foreground truncate">{user?.email ?? 'user@openmind.local'}</p>
               </div>

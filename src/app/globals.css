@@ -128,6 +128,37 @@
     mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
   }
 
+  .animated-grid {
+    background-image: linear-gradient(rgba(84, 150, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(84, 150, 255, 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+    animation: grid-drift 18s linear infinite;
+    mask-image: radial-gradient(circle at center, black 48%, transparent 96%);
+  }
+
+  .beam-sweep::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(110deg, transparent 22%, rgba(110, 176, 255, 0.08) 48%, transparent 72%);
+    animation: beam-sweep 24s linear infinite;
+    pointer-events: none;
+  }
+
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 0.7px, transparent 0.7px);
+    background-size: 2px 2px;
+    opacity: 0.16;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+
+  .radial-core-light {
+    background: radial-gradient(circle at 50% 44%, rgba(90, 155, 255, 0.11), transparent 46%), radial-gradient(circle at 50% 44%, rgba(170, 104, 255, 0.08), transparent 60%);
+  }
+
   .data-stream {
     position: relative;
     overflow: hidden;
@@ -144,6 +175,50 @@
 
   .warning-vibrate {
     animation: warning-vibrate 380ms linear 1;
+  }
+
+  .inner-shadow-panel {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -18px 28px rgba(2, 8, 22, 0.26);
+  }
+
+  .depth-blur {
+    filter: blur(50px);
+  }
+
+  .spatial-stack {
+    transform-style: preserve-3d;
+  }
+
+  .orbit-layout {
+    perspective: 1000px;
+  }
+
+  .micro-tilt {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .micro-tilt:hover {
+    transform: rotateX(1deg) rotateY(-1deg);
+  }
+
+  .sidebar-neon-edge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(68, 156, 255, 0.08), transparent 28%, transparent 72%, rgba(155, 95, 255, 0.08));
+    pointer-events: none;
+  }
+
+  .sidebar-hover-glow {
+    background: radial-gradient(circle at 26% 14%, rgba(95, 173, 255, 0.12), transparent 42%);
+  }
+
+  .nav-glow:hover {
+    box-shadow: 0 0 18px rgba(80, 152, 255, 0.22);
+  }
+
+  .animate-waveform {
+    animation: waveform 1.2s ease-in-out infinite;
   }
 }
 
@@ -174,6 +249,21 @@
 @keyframes stream-shift {
   0% { transform: translateX(-15%); }
   100% { transform: translateX(15%); }
+}
+
+@keyframes grid-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(18px, 12px, 0); }
+}
+
+@keyframes beam-sweep {
+  0% { transform: translateX(-35%) rotate(0.001deg); }
+  100% { transform: translateX(35%) rotate(0.001deg); }
+}
+
+@keyframes waveform {
+  0%, 100% { opacity: 0.55; transform: scaleY(0.8); }
+  50% { opacity: 1; transform: scaleY(1.2); }
 }
 
 @keyframes warning-vibrate {

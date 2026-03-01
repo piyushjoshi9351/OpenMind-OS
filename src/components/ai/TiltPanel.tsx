@@ -12,8 +12,10 @@ export function TiltPanel({ children, className }: TiltPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const rotateX = useSpring(useTransform(mouseY, [-50, 50], [6, -6]), { stiffness: 140, damping: 16 });
-  const rotateY = useSpring(useTransform(mouseX, [-50, 50], [-6, 6]), { stiffness: 140, damping: 16 });
+  const rotateX = useSpring(useTransform(mouseY, [-50, 50], [2, -2]), { stiffness: 140, damping: 18 });
+  const rotateY = useSpring(useTransform(mouseX, [-50, 50], [-2, 2]), { stiffness: 140, damping: 18 });
+  const translateX = useSpring(useTransform(mouseX, [-50, 50], [-2.5, 2.5]), { stiffness: 120, damping: 20 });
+  const translateY = useSpring(useTransform(mouseY, [-50, 50], [-2.5, 2.5]), { stiffness: 120, damping: 20 });
 
   const onMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = ref.current?.getBoundingClientRect();
@@ -36,7 +38,7 @@ export function TiltPanel({ children, className }: TiltPanelProps) {
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      style={{ rotateX, rotateY, transformPerspective: 900 }}
+      style={{ rotateX, rotateY, x: translateX, y: translateY, transformPerspective: 900 }}
       className={className}
     >
       {children}

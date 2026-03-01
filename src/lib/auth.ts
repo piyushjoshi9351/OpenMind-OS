@@ -8,6 +8,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updateProfile,
   type User,
 } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
@@ -46,4 +47,20 @@ export async function validateSecureToken(user: User): Promise<boolean> {
 export async function getUserRole(user: User): Promise<'admin' | 'user'> {
   const tokenResult = await user.getIdTokenResult();
   return tokenResult.claims.admin ? 'admin' : 'user';
+}
+
+export async function updateUserDisplayName(user: User, displayName: string) {
+  const sanitizedName = displayName.trim();
+  if (!sanitizedName) {
+    return;
+  }
+  await updateProfile(user, { displayName: sanitizedName });
+}
+
+export async function updateUserPhotoUrl(user: User, photoUrl: string) {
+  const sanitizedUrl = photoUrl.trim();
+  if (!sanitizedUrl) {
+    return;
+  }
+  await updateProfile(user, { photoURL: sanitizedUrl });
 }

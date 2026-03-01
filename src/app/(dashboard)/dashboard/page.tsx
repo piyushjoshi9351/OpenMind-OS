@@ -212,6 +212,13 @@ export default function Dashboard() {
 
   const topRisk = intelligence.goalRisks[0];
   const hasNoData = goals.length === 0 && tasks.length === 0;
+  const uiTone: 'calm' | 'active' | 'gold' = completionRatio >= 0.8 ? 'gold' : completionRatio >= 0.45 ? 'active' : 'calm';
+  const toneOverlayClass =
+    uiTone === 'gold'
+      ? 'bg-[radial-gradient(circle_at_22%_16%,rgba(255,210,120,0.16),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(176,108,255,0.16),transparent_35%)]'
+      : uiTone === 'active'
+        ? 'bg-[radial-gradient(circle_at_22%_16%,rgba(76,170,255,0.18),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(145,94,255,0.17),transparent_35%)]'
+        : 'bg-[radial-gradient(circle_at_22%_16%,rgba(64,144,225,0.12),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(118,92,195,0.11),transparent_35%)]';
 
   if (hasNoData) {
     return (
@@ -232,10 +239,15 @@ export default function Dashboard() {
   const lowEndMode = isMobile || Boolean(prefersReducedMotion);
 
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden rounded-3xl border border-white/10 data-stream">
+    <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden rounded-3xl border border-white/10 data-stream spatial-stack">
       {!lowEndMode && <NeuralBackground intensity={1 + completionRatio} />}
       <div className={`absolute inset-0 ${moodOverlayClass}`} />
+      <div className={`absolute inset-0 ${toneOverlayClass} transition-all duration-700`} />
       <div className="absolute inset-0 hud-grid opacity-45 pointer-events-none" />
+      <div className="absolute inset-0 animated-grid opacity-30 pointer-events-none" />
+      <div className="absolute inset-0 beam-sweep pointer-events-none" />
+      <div className="absolute inset-0 noise-overlay opacity-30 pointer-events-none" />
+      <div className="absolute inset-0 radial-core-light pointer-events-none" />
 
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="relative z-10 p-6 lg:p-8 space-y-6">
         <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-4">
@@ -274,7 +286,7 @@ export default function Dashboard() {
               ))}
             </div>
             <Badge className="glass-panel border-primary/30 text-primary px-3 py-1">
-              <span className="processing-dots">AI Processing</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300 animate-pulse" /><span className="processing-dots">AI Processing</span></span>
             </Badge>
             <DataFreshnessIndicator updatedAt={advancedAnalytics.metrics.updatedAt} />
             <RippleButton
@@ -290,10 +302,10 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <motion.section variants={itemVariants} className="xl:col-span-3 space-y-4">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 orbit-layout">
+          <motion.section variants={itemVariants} className="xl:col-span-3 space-y-4 xl:translate-y-2">
             <TiltPanel className="floating-card">
-              <Card className="om-card">
+              <Card className="om-card inner-shadow-panel micro-tilt">
                 <CardHeader>
                   <CardTitle className="text-sm uppercase tracking-[0.2em] text-primary">Goal Streams</CardTitle>
                 </CardHeader>
@@ -312,11 +324,14 @@ export default function Dashboard() {
               </Card>
             </TiltPanel>
 
-            <AIPresencePanel activityLevel={activityLevel} />
+            <TiltPanel>
+              <AIPresencePanel activityLevel={activityLevel} />
+            </TiltPanel>
           </motion.section>
 
-          <motion.section variants={itemVariants} className="xl:col-span-6">
-            <Card className="glass-panel neon-glow rounded-2xl overflow-hidden">
+          <motion.section variants={itemVariants} className="xl:col-span-6 xl:-translate-y-1 relative">
+            <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-cyan-400/10 blur-3xl depth-blur" />
+            <Card className="glass-panel neon-glow rounded-2xl overflow-hidden inner-shadow-panel micro-tilt">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <BrainCircuit className="h-5 w-5 text-primary" /> Adaptive AI Core
@@ -342,7 +357,7 @@ export default function Dashboard() {
                 { label: 'Focus Index', value: dashboardSnapshot.focusScore, icon: Zap },
                 { label: 'Burnout Risk', value: dashboardSnapshot.burnoutRisk, icon: Radar },
               ].map((item) => (
-                <motion.div key={item.label} whileHover={{ y: -3, scale: 1.02 }} className="glass-panel rounded-xl p-3">
+                <motion.div key={item.label} whileHover={{ y: -3, scale: 1.02, rotate: 1.2 }} className="glass-panel rounded-xl p-3 inner-shadow-panel micro-tilt">
                   <div className="flex items-center justify-between text-xs text-muted-foreground uppercase tracking-[0.14em]">
                     <span>{item.label}</span>
                     <item.icon className="h-4 w-4 text-primary" />
@@ -355,8 +370,8 @@ export default function Dashboard() {
             </div>
           </motion.section>
 
-          <motion.section variants={itemVariants} className="xl:col-span-3 space-y-4">
-            <Card className="om-card">
+          <motion.section variants={itemVariants} className="xl:col-span-3 space-y-4 xl:translate-y-3">
+            <Card className="om-card inner-shadow-panel micro-tilt">
               <CardHeader>
                 <CardTitle className="text-sm uppercase tracking-[0.2em] text-primary">Cognitive Signals</CardTitle>
               </CardHeader>
@@ -379,7 +394,7 @@ export default function Dashboard() {
                     <AnimatedCounter value={dashboardSnapshot.activeGoals} />
                   </div>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-black/20 p-2">
+                <div className="rounded-xl border border-white/10 bg-black/20 p-2 inner-shadow-panel">
                   <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground px-1">Focus Pulse</div>
                   <div className="h-20">
                     <ResponsiveContainer width="100%" height="100%">
@@ -399,7 +414,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className={dashboardSnapshot.burnoutRisk > 60 ? 'om-card warning-vibrate' : 'om-card'}>
+            <Card className={dashboardSnapshot.burnoutRisk > 60 ? 'om-card warning-vibrate inner-shadow-panel micro-tilt' : 'om-card inner-shadow-panel micro-tilt'}>
               <CardContent className="p-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2 text-primary mb-2"><Sparkles className="h-4 w-4" /> AI Insight</div>
                 <TypingText text="System detects elevated execution rhythm with stable cognitive load. Recommend extending deep-work cycles by 15 minutes." />
