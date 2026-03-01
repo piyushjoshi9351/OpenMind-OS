@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,9 @@ import {
   Tag,
   ChevronRight,
   Sparkles,
+  Flame,
+  Bot,
+  ArrowDownUp,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useFirestore, useUser } from '@/firebase';
@@ -71,6 +75,67 @@ export default function TasksPage() {
     const overdue = tasks.filter((task) => !task.completed && new Date(task.deadline).getTime() < now).length;
     return Math.max(0, Math.round((completed / tasks.length) * 100 - (overdue / tasks.length) * 30));
   }, [now, tasks]);
+
+  const productivityHeat = useMemo(() => {
+    if (performanceScore >= 75) {
+      return { label: 'High', tone: 'text-cyan-200 border-cyan-300/30 bg-cyan-500/10' };
+    }
+    if (performanceScore >= 45) {
+      return { label: 'Medium', tone: 'text-purple-200 border-purple-300/30 bg-purple-500/10' };
+    }
+    return { label: 'Low', tone: 'text-amber-200 border-amber-300/30 bg-amber-500/10' };
+  }, [performanceScore]);
+
+  const aiRecommendedTasks = useMemo(() => {
+    return tasks
+      .filter((task) => !task.completed)
+      .map((task) => {
+        const dueMs = new Date(task.deadline).getTime() - now;
+        const dueDays = Math.ceil(dueMs / 86400000);
+        const urgencyScore = dueDays <= 0 ? 45 : dueDays <= 2 ? 32 : dueDays <= 5 ? 20 : 8;
+        const effortScore = Math.max(0, 16 - Math.round(task.estimatedTime / 30));
+        const tagBoost = task.tags.includes('Learning') ? 10 : 6;
+        return {
+          ...task,
+          aiScore: Math.max(1, Math.min(100, urgencyScore + effortScore + tagBoost)),
+        };
+      })
+      .sort((leftTask, rightTask) => rightTask.aiScore - leftTask.aiScore)
+      .slice(0, 3);
+  }, [now, tasks]);
+
+  const groupedTasks = useMemo(() => {
+    const overdue: typeof filteredTasks = [];
+    const today: typeof filteredTasks = [];
+    const upcoming: typeof filteredTasks = [];
+
+    filteredTasks.forEach((task) => {
+      if (task.completed) {
+        upcoming.push(task);
+        return;
+      }
+
+      const dueDate = new Date(task.deadline);
+      if (Number.isNaN(dueDate.getTime()) || dueDate.getTime() < now) {
+        overdue.push(task);
+        return;
+      }
+
+      const sameDay = new Date().toISOString().slice(0, 10) === task.deadline;
+      if (sameDay) {
+        today.push(task);
+        return;
+      }
+
+      upcoming.push(task);
+    });
+
+    return [
+      { key: 'Overdue Priority', items: overdue },
+      { key: 'Today Focus', items: today },
+      { key: 'Upcoming Queue', items: upcoming },
+    ];
+  }, [filteredTasks, now]);
 
   useEffect(() => {
     const shouldFocus = searchParams.get('quickAdd') === '1';
@@ -264,12 +329,56 @@ export default function TasksPage() {
       <Card className="om-card">
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-muted-foreground">Performance score: <span className="font-semibold text-foreground">{performanceScore}</span></div>
+          <Badge variant="outline" className={productivityHeat.tone}>Productivity Heat: {productivityHeat.label}</Badge>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => applyBulkComplete(true)}>Mark Selected Complete</Button>
             <Button variant="outline" size="sm" onClick={() => applyBulkComplete(false)}>Mark Selected Pending</Button>
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="om-card">
+          <CardHeader>
+            <CardTitle className="text-base font-headline flex items-center gap-2">
+              <Bot className="h-4 w-4 text-cyan-300" /> AI Recommended Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {aiRecommendedTasks.length ? aiRecommendedTasks.map((task) => (
+              <div key={task.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium truncate">{task.title}</p>
+                  <Badge className="bg-primary/20 border border-primary/30 text-cyan-100">Score {task.aiScore}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Due {task.deadline} • {Math.max(1, Math.round(task.estimatedTime / 60))}h estimate</p>
+              </div>
+            )) : <p className="text-sm text-muted-foreground">No pending tasks for recommendations yet.</p>}
+          </CardContent>
+        </Card>
+
+        <Card className="om-card">
+          <CardHeader>
+            <CardTitle className="text-base font-headline flex items-center gap-2">
+              <Flame className="h-4 w-4 text-purple-300" /> Productivity Heat Indicator
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-xs text-muted-foreground">Realtime intensity</p>
+              <div className="mt-2 h-2 rounded-full overflow-hidden bg-white/10">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(6, performanceScore)}%` }}
+                  transition={{ duration: 0.45 }}
+                  className="h-full bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Engine signal: {performanceScore >= 75 ? 'Peak execution rhythm detected.' : performanceScore >= 45 ? 'Stable rhythm with optimization headroom.' : 'Low rhythm. Prioritize AI recommended tasks first.'}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar Filters */}
@@ -316,52 +425,73 @@ export default function TasksPage() {
             <Input placeholder="Search tasks..." className="pl-10 h-11 bg-white/5 border-border shadow-sm" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
           </div>
 
-          <div className="space-y-3">
-            {filteredTasks.map((task) => (
-              <Card
-                key={task.id}
-                className="om-card group"
-                draggable
-                onDragStart={() => setDraggedTaskId(task.id)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={async () => {
-                  if (draggedTaskId) {
-                    await reorderTasks(draggedTaskId, task.id);
-                  }
-                  setDraggedTaskId(null);
-                }}
-              >
-                <CardContent className="p-4 flex items-center gap-4">
-                  <Checkbox aria-label={`Select task ${task.title}`} checked={selectedTaskIds.includes(task.id)} className="h-5 w-5 rounded-full" onCheckedChange={(checked) => {
-                    setSelectedTaskIds((current) => checked
-                      ? [...current, task.id]
-                      : current.filter((taskId) => taskId !== task.id));
-                  }} />
-                  <Checkbox aria-label={`Mark ${task.title} as completed`} checked={task.completed} className="h-5 w-5 rounded-full" onCheckedChange={(checked) => toggleTask(task.id, Boolean(checked))} />
-                  <div className="flex-1 min-w-0">
-                    <h4 className={`font-semibold text-lg truncate ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {task.title}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-4 mt-1 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {task.deadline}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {Math.round(task.estimatedTime / 60)}h estimated
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" /> {task.tags.join(', ')}
-                      </div>
-                      {!task.completed && new Date(task.deadline).getTime() < now && (
-                        <Badge variant="destructive">Overdue</Badge>
-                      )}
-                    </div>
+          <div className="space-y-4">
+            {groupedTasks.map((group) => (
+              <div key={group.key} className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{group.key}</p>
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <ArrowDownUp className="h-3.5 w-3.5" /> Smart sorting active
                   </div>
-                  <Button aria-label={`Open details for ${task.title}`} variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {group.items.map((task) => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card
+                        className="om-card group hover:-translate-y-0.5 transition-transform"
+                        draggable
+                        onDragStart={() => setDraggedTaskId(task.id)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={async () => {
+                          if (draggedTaskId) {
+                            await reorderTasks(draggedTaskId, task.id);
+                          }
+                          setDraggedTaskId(null);
+                        }}
+                      >
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <Checkbox aria-label={`Select task ${task.title}`} checked={selectedTaskIds.includes(task.id)} className="h-5 w-5 rounded-full" onCheckedChange={(checked) => {
+                            setSelectedTaskIds((current) => checked
+                              ? [...current, task.id]
+                              : current.filter((taskId) => taskId !== task.id));
+                          }} />
+                          <Checkbox aria-label={`Mark ${task.title} as completed`} checked={task.completed} className="h-5 w-5 rounded-full" onCheckedChange={(checked) => toggleTask(task.id, Boolean(checked))} />
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`font-semibold text-lg truncate ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                              {task.title}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-4 mt-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" /> {task.deadline}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> {Math.round(task.estimatedTime / 60)}h estimated
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Tag className="h-3 w-3" /> {task.tags.join(', ')}
+                              </div>
+                              {!task.completed && new Date(task.deadline).getTime() < now && (
+                                <Badge variant="destructive">Overdue</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button aria-label={`Open details for ${task.title}`} variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ChevronRight className="h-5 w-5" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             ))}
 
             {!filteredTasks.length && hasNoTasks && (

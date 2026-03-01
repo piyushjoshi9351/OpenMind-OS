@@ -91,20 +91,26 @@ export default function AnalyticsPage() {
   }));
 
   return (
-    <motion.div variants={container} initial="hidden" animate="visible" className="max-w-7xl mx-auto space-y-8">
+    <motion.div variants={container} initial="hidden" animate="visible" className="max-w-7xl mx-auto space-y-8 relative overflow-hidden rounded-3xl border border-white/10 p-4 md:p-6">
+      <div className="absolute inset-0 hud-grid opacity-35 pointer-events-none" />
+      <div className="absolute -top-24 left-24 h-60 w-60 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none" />
+      <div className="absolute top-10 right-20 h-56 w-56 rounded-full bg-purple-400/10 blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(94,166,255,0.16),transparent_35%),radial-gradient(circle_at_90%_10%,rgba(152,94,255,0.16),transparent_32%)] pointer-events-none" />
+
       <motion.div variants={item}>
-        <h1 className="text-3xl font-headline font-bold">Cognitive Analytics Engine</h1>
-        <p className="text-muted-foreground mt-1">Live neural metrics with glow-layered visual intelligence tracking.</p>
+        <h1 className="text-3xl font-headline font-bold">Neural Intelligence Engine</h1>
+        <p className="text-muted-foreground mt-1">Live metric tracing, adaptive counters, and beam-layered cognitive signal analysis.</p>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
         {[
           { label: 'Consistency Score', value: dashboardSnapshot.consistencyScore, icon: Flame, suffix: '%' },
           { label: 'Burnout Risk', value: dashboardSnapshot.burnoutRisk, icon: Timer, suffix: '%' },
           { label: 'Focus Index', value: dashboardSnapshot.focusScore, icon: Gauge, suffix: '%' },
           { label: 'Learning Boost', value: Number(advancedAnalytics.learningAcceleration.toFixed(2)), icon: TrendingUp, suffix: 'x' },
         ].map((metric) => (
-          <TiltPanel key={metric.label} className="glass-panel rounded-2xl p-4">
+          <TiltPanel key={metric.label} className="glass-panel rounded-2xl p-4 relative overflow-hidden">
+            <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-cyan-300/80 via-blue-400/70 to-purple-400/70" />
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-muted-foreground">
               <span>{metric.label}</span>
               <metric.icon className="h-4 w-4 text-primary" />
@@ -116,7 +122,7 @@ export default function AnalyticsPage() {
         ))}
       </motion.div>
 
-      <motion.section variants={item}>
+      <motion.section variants={item} className="relative z-10">
         <Card className="glass-panel border-white/10 rounded-2xl">
           <CardHeader>
             <CardTitle className="font-headline">Weekly Completion Momentum</CardTitle>
@@ -144,7 +150,7 @@ export default function AnalyticsPage() {
         </Card>
       </motion.section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         <motion.section variants={item}>
           <Card className="glass-panel border-white/10 rounded-2xl">
             <CardHeader>
@@ -200,7 +206,7 @@ export default function AnalyticsPage() {
         </motion.section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         <motion.section variants={item}>
           <Card className="glass-panel border-white/10 rounded-2xl">
             <CardHeader>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +81,7 @@ export default function GraphPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-headline font-bold">Knowledge Memory Graph</h1>
-          <p className="text-muted-foreground mt-1">Visualize your cognitive connections and skill trees.</p>
+          <p className="text-muted-foreground mt-1">Immersive research-lab workspace for cognitive knowledge mapping.</p>
         </div>
         <div className="flex gap-2">
           <RippleButton variant="outline" className="gap-2 glass-panel">
@@ -135,47 +135,69 @@ export default function GraphPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 h-[600px]">
-          <KnowledgeGraph data={graphData} weakClusters={weakClusters} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} />
+      <div className="relative rounded-2xl border border-white/10 bg-black/35 p-3 md:p-4 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(90,170,255,0.10),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(150,90,255,0.12),transparent_32%)] pointer-events-none" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 relative z-10">
+          <div className="lg:col-span-3 h-[620px]">
+            <KnowledgeGraph data={graphData} weakClusters={weakClusters} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} />
+          </div>
+          <div className="space-y-6">
+            <Card className="glass-panel border-white/10 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-headline">Graph Insights</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {weakClusters.map((cluster) => (
+                  <div key={cluster.id} className="text-sm p-3 rounded-lg bg-primary/5">
+                    <p className="font-semibold">Weak Cluster: {cluster.title}</p>
+                    <p className="text-muted-foreground mt-1">Weakness score {cluster.weaknessScore}. Add supporting links to strengthen this skill area.</p>
+                  </div>
+                ))}
+                {!weakClusters.length && (
+                  <div className="text-sm p-3 rounded-lg bg-accent/5">
+                    <p className="font-semibold">No weak clusters detected</p>
+                    <p className="text-muted-foreground mt-1">Your skill nodes have healthy connectivity.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="glass-panel border-white/10 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-headline">Research Console</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>• Nodes pulse to indicate active cognitive pathways.</p>
+                <p>• Edges animate to show relationship flow direction.</p>
+                <p>• Select any node to open floating detail inspector.</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <div className="space-y-6">
-          <Card className="glass-panel border-white/10 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-lg font-headline">Graph Insights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {weakClusters.map((cluster) => (
-                <div key={cluster.id} className="text-sm p-3 rounded-lg bg-primary/5">
-                  <p className="font-semibold">Weak Cluster: {cluster.title}</p>
-                  <p className="text-muted-foreground mt-1">Weakness score {cluster.weaknessScore}. Add supporting links to strengthen this skill area.</p>
-                </div>
-              ))}
-              {!weakClusters.length && (
-                <div className="text-sm p-3 rounded-lg bg-accent/5">
-                  <p className="font-semibold">No weak clusters detected</p>
-                  <p className="text-muted-foreground mt-1">Your skill nodes have healthy connectivity.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="glass-panel border-white/10 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-lg font-headline">Node Detail Panel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!selectedNode && <p className="text-sm text-muted-foreground">Click a node to inspect metadata and relation context.</p>}
-              {selectedNode && (
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-semibold">Title:</span> {selectedNode.title}</p>
-                  <p><span className="font-semibold">Type:</span> {selectedNode.type}</p>
-                  <p><span className="font-semibold">Created:</span> {new Date(selectedNode.createdAt).toLocaleDateString()}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+
+        <AnimatePresence>
+          {selectedNode && (
+            <motion.aside
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 30 }}
+              transition={{ duration: 0.24 }}
+              className="absolute right-5 top-5 w-[320px] max-w-[calc(100%-2.5rem)] rounded-2xl border border-cyan-300/25 bg-background/90 backdrop-blur-xl shadow-[0_0_35px_rgba(88,177,255,0.22)] z-20"
+            >
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <p className="text-sm font-semibold text-cyan-100">Node Detail Panel</p>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedNodeId(null)}>Close</Button>
+              </div>
+              <div className="p-4 space-y-2 text-sm">
+                <p><span className="font-semibold">Title:</span> {selectedNode.title}</p>
+                <p><span className="font-semibold">Type:</span> {selectedNode.type}</p>
+                <p><span className="font-semibold">Created:</span> {new Date(selectedNode.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground pt-2">Module status: AI relation tracing active.</p>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

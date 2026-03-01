@@ -33,6 +33,15 @@ export function KeyboardShortcuts() {
     const handleKeydown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
 
+      if ((event.ctrlKey || event.metaKey) && key === 'k') {
+        event.preventDefault();
+        if (user) {
+          void trackFeatureEvent({ userId: user.uid, eventName: 'shortcut_command_palette', page: pathname });
+        }
+        window.dispatchEvent(new Event('om:command-palette-open'));
+        return;
+      }
+
       if (event.shiftKey && event.key === '?') {
         event.preventDefault();
         if (user) {
@@ -40,7 +49,7 @@ export function KeyboardShortcuts() {
         }
         toast({
           title: 'Keyboard Shortcuts',
-          description: 'D Dashboard • G Goals • T Tasks • I Insights • R Roadmap • P Profile • Q Quick Add • X Complete First Pending (Tasks)',
+          description: '⌘/Ctrl+K Command Palette • D Dashboard • G Goals • T Tasks • I Insights • R Roadmap • P Profile • Q Quick Add • X Complete First Pending (Tasks)',
         });
         return;
       }

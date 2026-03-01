@@ -4,14 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { 
+  Bell,
+  Brain,
   LayoutDashboard, 
   Target, 
   CheckSquare, 
   Network, 
   BarChart3, 
   Map, 
-  Zap, 
-  Gauge,
+  Zap,
+  User,
+  Settings,
   LogOut,
   BrainCircuit
 } from 'lucide-react';
@@ -21,15 +24,36 @@ import { useUser } from '@/firebase';
 import { logoutUser } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Goals', href: '/goals', icon: Target },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Knowledge Graph', href: '/graph', icon: Network },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Skill Gap', href: '/skill-gap', icon: Gauge },
-  { name: 'Roadmap', href: '/roadmap', icon: Map },
-  { name: 'Cognitive Insights', href: '/insights', icon: Zap },
+const navSections = [
+  {
+    title: 'Core',
+    items: [
+      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Intelligence', href: '/insights', icon: Brain },
+    ],
+  },
+  {
+    title: 'Execution',
+    items: [
+      { name: 'Goals', href: '/goals', icon: Target },
+      { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+      { name: 'Roadmap', href: '/roadmap', icon: Map },
+    ],
+  },
+  {
+    title: 'Knowledge',
+    items: [
+      { name: 'Graph', href: '/graph', icon: Network },
+      { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { name: 'Profile', href: '/profile', icon: User },
+      { name: 'Settings', href: '/settings', icon: Settings },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -61,54 +85,80 @@ export function Sidebar() {
   };
 
   return (
-    <div className="hidden md:flex flex-col h-screen w-64 bg-sidebar border-r border-sidebar-border">
-      <div className="p-6 flex items-center gap-3">
-        <div className="bg-primary p-2 rounded-xl">
-          <BrainCircuit className="text-primary-foreground h-6 w-6" />
-        </div>
-        <span className="font-headline text-xl font-bold tracking-tight">OpenMind OS</span>
-      </div>
+    <aside className="hidden md:flex group/sidebar relative h-screen shrink-0 w-20 hover:w-72 transition-[width] duration-300 bg-sidebar/70 border-r border-sidebar-border backdrop-blur-xl">
+      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-cyan-400/10 via-cyan-300/40 to-purple-400/10" />
 
-      <nav className="flex-1 px-4 py-4 space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            aria-label={`Go to ${item.name}`}
-            aria-current={pathname === item.href ? 'page' : undefined}
-            className={cn(
-              "flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group",
-              pathname === item.href 
-                ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-            )}
-          >
-              <item.icon className={cn(
-                "h-5 w-5",
-                pathname === item.href ? "text-sidebar-accent-foreground" : "text-muted-foreground group-hover:text-sidebar-accent-foreground"
-              )} />
-              {item.name}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="p-4 border-t border-sidebar-border">
-        <Link href="/profile" aria-label="Open profile settings">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent/50 cursor-pointer">
-            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center font-bold text-white">
-              {userInitials}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{user?.displayName ?? 'OpenMind User'}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email ?? 'user@openmind.local'}</p>
-            </div>
+      <div className="flex h-full w-full flex-col">
+        <div className="px-4 py-5 flex items-center gap-3 min-h-[76px]">
+          <div className="bg-primary/20 border border-primary/40 p-2 rounded-xl neon-glow">
+            <BrainCircuit className="text-cyan-200 h-6 w-6" />
           </div>
-        </Link>
-        <Button aria-label="Logout from OpenMind OS" variant="ghost" className="w-full min-h-11 justify-start gap-3 mt-4 text-muted-foreground hover:text-destructive" onClick={handleLogout}>
-          <LogOut className="h-5 w-5" />
-          Logout
-        </Button>
+          <div className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+            <p className="font-headline text-lg font-bold tracking-tight">OpenMind OS</p>
+            <p className="text-[11px] text-muted-foreground">Smart Dock</p>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto">
+          {navSections.map((section) => (
+            <div key={section.title} className="space-y-1.5">
+              <div className="h-px mx-2 bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent opacity-70" />
+              <p className="px-3 text-[10px] uppercase tracking-[0.16em] text-muted-foreground opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+                {section.title}
+              </p>
+              {section.items.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  aria-label={`Go to ${item.name}`}
+                  aria-current={pathname === item.href ? 'page' : undefined}
+                  className={cn(
+                    'relative flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    pathname === item.href
+                      ? 'bg-primary/20 text-cyan-100 border border-cyan-300/30 shadow-[0_0_20px_rgba(88,177,255,0.25)]'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 border border-transparent',
+                  )}
+                >
+                  <item.icon className={cn(
+                    'h-5 w-5 shrink-0',
+                    pathname === item.href ? 'text-cyan-200' : 'text-muted-foreground group-hover/sidebar:text-cyan-200',
+                  )} />
+                  <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {item.name}
+                  </span>
+                  {pathname === item.href && (
+                    <span className="absolute right-2 h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
+                  )}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="p-3 border-t border-sidebar-border/70 space-y-2">
+          <Link href="/profile" aria-label="Open profile settings">
+            <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-sidebar-accent/50 cursor-pointer transition-colors border border-white/10 bg-black/20">
+              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white shrink-0">
+                {userInitials}
+              </div>
+              <div className="min-w-0 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+                <p className="text-sm font-medium truncate">{user?.displayName ?? 'OpenMind User'}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email ?? 'user@openmind.local'}</p>
+              </div>
+              <Bell className="h-4 w-4 text-muted-foreground opacity-0 group-hover/sidebar:opacity-100 transition-opacity" />
+            </div>
+          </Link>
+          <Button
+            aria-label="Logout from OpenMind OS"
+            variant="ghost"
+            className="w-full min-h-11 justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Logout</span>
+          </Button>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 }
