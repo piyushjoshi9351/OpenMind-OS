@@ -49,6 +49,25 @@ export interface GoalPredictionFeatures {
   activeHours: number;
 }
 
+export interface MLInsightsPayload {
+  userId: string;
+  targetRole: string;
+  userSkills: string[];
+  windowDays?: number;
+}
+
+export interface MLInsightsResult {
+  user_id: string;
+  target_role: string;
+  model_name: string;
+  ai_readiness_score: number;
+  execution_score: number;
+  risk_score: number;
+  skill_gap_percentage: number;
+  completion_probability: number;
+  recommended_actions: string[];
+}
+
 export const api = {
   async healthcheck() {
     const response = await fetch(`${API_V1_BASE}/health`, { method: 'GET' });
@@ -149,6 +168,25 @@ export const api = {
 
     const data = await response.json();
     return { completionProbability: Number(data.completion_probability ?? 0) };
+  },
+
+  async getMLInsights(input: MLInsightsPayload): Promise<MLInsightsResult | null> {
+    const response = await fetch(`${API_V1_BASE}/ml-insights/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: input.userId,
+        target_role: input.targetRole,
+        user_skills: input.userSkills,
+        window_days: input.windowDays ?? 7,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json();
   },
 
   async createEmbedding(payload: EmbeddingPayload): Promise<{ embeddingId: string } | null> {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -26,14 +26,42 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { uxCopy } from '@/lib/ux-copy';
 import { useUser } from '@/firebase';
 import { trackFeatureEvent } from '@/lib/event-tracking';
+import { api, type MLInsightsResult } from '@/lib/api';
 
 export default function InsightsPage() {
   const router = useRouter();
   const { user } = useUser();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [mlInsights, setMlInsights] = useState<MLInsightsResult | null>(null);
   const { goals, loading: goalsLoading, error: goalsError } = useRealtimeGoals();
   const { tasks, loading: tasksLoading, error: tasksError } = useRealtimeTasks();
   const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
+
+  useEffect(() => {
+    if (!user || goalsLoading || tasksLoading || goalsError || tasksError) {
+      return;
+    }
+
+    const targetRole = goals.find((goal) => goal.category === 'Career')?.title || 'AI Engineer';
+    const userSkills = Array.from(
+      new Set(
+        goals
+          .flatMap((goal) => goal.title.split(/\s+/))
+          .map((skill) => skill.trim())
+          .filter((skill) => skill.length > 2)
+      )
+    );
+
+    void api
+      .getMLInsights({
+        userId: user.uid,
+        targetRole,
+        userSkills,
+        windowDays: 7,
+      })
+      .then((result) => setMlInsights(result))
+      .catch(() => setMlInsights(null));
+  }, [goals, goalsError, goalsLoading, tasksError, tasksLoading, user]);
 
   const performanceData = useMemo(() => {
     return dashboardSnapshot.weeklyProductivity.map((item, index) => ({
@@ -67,6 +95,7 @@ export default function InsightsPage() {
     dashboardSnapshot.burnoutRisk > 40 ? 'Reduce parallel tasks for 48h to recover cognitive load.' : 'Current load is stable; keep deep-work cadence.',
     advancedAnalytics.delayRatio > 0.25 ? 'Start day with one overdue task to reduce delay ratio.' : 'Delay ratio is healthy; maintain closing rhythm.',
     dashboardSnapshot.focusScore < 60 ? 'Add one distraction-free block of 60 minutes today.' : 'Focus quality is high; preserve the current routine.',
+    ...(mlInsights?.recommended_actions?.slice(0, 2) ?? []),
   ];
 
   const trendChips = [
@@ -148,6 +177,11 @@ export default function InsightsPage() {
               <span>{chip.label}: {chip.value}</span>
             </Badge>
           ))}
+          {mlInsights && (
+            <Badge variant="outline" className="px-3 py-1.5">
+              Python ML Engine: {mlInsights.model_name}
+            </Badge>
+          )}
         </div>
       )}
 
@@ -173,6 +207,14 @@ export default function InsightsPage() {
           value={`${Math.round((1 - advancedAnalytics.delayRatio) * 100)}%`} 
           icon={<Battery className="h-6 w-6 text-cyan-300" />}
         />
+        {mlInsights && (
+          <StatsCard
+            title="AI Readiness"
+            value={`${Math.round(mlInsights.ai_readiness_score)}%`}
+            icon={<Sparkles className="h-6 w-6 text-cyan-300" />}
+            description="Python ML fusion signal"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -148,3 +148,22 @@ class GoalPredictionResponse(BaseModel):
     completion_probability: float
     model_name: str
     factors: dict[str, float]
+
+
+class MLInsightsRequest(BaseModel):
+    user_id: str = Field(min_length=2)
+    target_role: str = Field(min_length=2)
+    user_skills: list[str] = Field(default_factory=list)
+    window_days: int = Field(default=7, ge=1, le=30)
+
+
+class MLInsightsResponse(BaseModel):
+    user_id: str
+    target_role: str
+    model_name: str
+    ai_readiness_score: float
+    execution_score: float
+    risk_score: float
+    skill_gap_percentage: float
+    completion_probability: float
+    recommended_actions: list[str]
