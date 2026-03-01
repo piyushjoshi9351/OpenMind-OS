@@ -7,7 +7,7 @@ import { useUser } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { api } from '@/lib/api';
 import { getUserRole, validateSecureToken } from '@/lib/auth';
-import { analyticsService, goalService, graphService, intelligenceService, taskService } from '@/services';
+import { analyticsService, goalService, graphService, intelligenceService, metricsService, taskService } from '@/services';
 import type {
   BehaviorMetrics,
   DashboardSnapshot,
@@ -143,6 +143,27 @@ export function useRealtimeTasks() {
         throw new Error('Task context unavailable.');
       }
       await taskService.toggleCompleted(firestore, user.uid, targetTask.goalId, taskId, completed);
+
+      const delayDays = Math.max(0, (Date.now() - new Date(targetTask.deadline).getTime()) / 86400000);
+      await Promise.all([
+        metricsService.captureBehavior(firestore, {
+          userId: user.uid,
+          completedTaskDelta: completed ? 1 : -1,
+          totalTaskDelta: 0,
+          taskCompletionMinutes: completed ? Math.max(targetTask.actualTime, targetTask.estimatedTime) : 0,
+          taskDelayDays: completed ? delayDays : 0,
+          activeHours: completed ? Math.max(0.1, targetTask.estimatedTime / 60) : 0,
+        }),
+        api.trackBehavior({
+          userId: user.uid,
+          eventType: completed ? 'task_completed' : 'task_reopened',
+          taskCompletionMinutes: completed ? Math.max(targetTask.actualTime, targetTask.estimatedTime) : 0,
+          taskDelayDays: completed ? delayDays : 0,
+          completedTaskDelta: completed ? 1 : -1,
+          totalTaskDelta: 0,
+          activeHours: completed ? Math.max(0.1, targetTask.estimatedTime / 60) : 0,
+        }),
+      ]);
     } catch (updateError) {
       setTasks(previous);
       toast({
@@ -230,27 +251,68 @@ export function useCognitiveAnalytics(goals: GoalModel[], tasks: TaskModel[]) {
 }
 
 export function useSkillGapAnalysis(goals: GoalModel[], nodes: KnowledgeNodeModel[]): SkillGapAnalysis | null {
-  return useMemo(() => {
-    if (!goals.length) {
-      return null;
+  const { user } = useUser();
+  const [analysis, setAnalysis] = useState<SkillGapAnalysis | null>(null);
+
+  useEffect(() => {
+    if (!goals.length || !user) {
+      setAnalysis(null);
+      return;
     }
 
     const targetGoal = [...goals].sort((a, b) => b.skillGapScore - a.skillGapScore)[0];
     const existingSkills = nodes.filter((node) => node.type === 'skill').map((node) => node.title);
-    const requiredSkills = ['System Design', 'Data Modeling', 'Python', 'MLOps', 'Deep Learning'];
-    const missingSkills = requiredSkills.filter((skill) => !existingSkills.includes(skill));
-    const gapPercentage = Math.round((missingSkills.length / requiredSkills.length) * 100);
+    const roleHint = targetGoal.title.toLowerCase().includes('data scientist')
+      ? 'data_scientist'
+      : targetGoal.title.toLowerCase().includes('backend')
+        ? 'backend_engineer'
+        : targetGoal.title.toLowerCase().includes('product')
+          ? 'product_manager'
+          : 'ai_engineer';
 
-    return {
-      goalId: targetGoal.id,
-      goalTitle: targetGoal.title,
-      requiredSkills,
-      existingSkills,
-      missingSkills,
-      gapPercentage,
-      recommendations: missingSkills.map((skill) => `Add a 2-week sprint for ${skill}`),
+    let isMounted = true;
+
+    void api.getSkillGap({ userId: user.uid, targetRole: roleHint, userSkills: existingSkills })
+      .then((result) => {
+        if (!isMounted || !result) {
+          return;
+        }
+
+        setAnalysis({
+          goalId: targetGoal.id,
+          goalTitle: targetGoal.title,
+          requiredSkills: result.requiredSkills,
+          existingSkills: result.existingSkills,
+          missingSkills: result.missingSkills,
+          gapPercentage: result.gapPercentage,
+          recommendations: result.recommendations,
+        });
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        const requiredSkills = ['System Design', 'Data Modeling', 'Python', 'MLOps', 'Deep Learning'];
+        const missingSkills = requiredSkills.filter((skill) => !existingSkills.includes(skill));
+        const gapPercentage = Math.round((missingSkills.length / requiredSkills.length) * 100);
+        setAnalysis({
+          goalId: targetGoal.id,
+          goalTitle: targetGoal.title,
+          requiredSkills,
+          existingSkills,
+          missingSkills,
+          gapPercentage,
+          recommendations: missingSkills.map((skill) => `Add a 2-week sprint for ${skill}`),
+        });
+      });
+
+    return () => {
+      isMounted = false;
     };
-  }, [goals, nodes]);
+  }, [goals, nodes, user]);
+
+  return analysis;
 }
 
 export function useIntelligenceAddons(goals: GoalModel[], tasks: TaskModel[], energy: EnergyLevel) {

@@ -1,0 +1,35 @@
+{
+  "ai_engineer": [
+    "Python",
+    "Machine Learning",
+    "Deep Learning",
+    "MLOps",
+    "System Design",
+    "Data Modeling",
+    "Model Evaluation"
+  ],
+  "data_scientist": [
+    "Python",
+    "Statistics",
+    "Data Visualization",
+    "Experimentation",
+    "SQL",
+    "Machine Learning"
+  ],
+  "backend_engineer": [
+    "Python",
+    "APIs",
+    "Databases",
+    "System Design",
+    "Testing",
+    "Cloud Basics"
+  ],
+  "product_manager": [
+    "Roadmapping",
+    "Prioritization",
+    "Analytics",
+    "Experimentation",
+    "Communication",
+    "Stakeholder Management"
+  ]
+}

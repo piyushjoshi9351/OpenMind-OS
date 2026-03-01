@@ -29,6 +29,26 @@ export interface TrackEventPayload {
   metadata?: Record<string, string>;
 }
 
+export interface BehaviorTrackPayload {
+  userId: string;
+  eventType: string;
+  taskCompletionMinutes?: number;
+  taskDelayDays?: number;
+  sessionDurationMinutes?: number;
+  goalProgressVelocity?: number;
+  completedTaskDelta?: number;
+  totalTaskDelta?: number;
+  workloadLevel?: number;
+  activeHours?: number;
+}
+
+export interface GoalPredictionFeatures {
+  consistencyScore: number;
+  delayRatio: number;
+  completionVelocity: number;
+  activeHours: number;
+}
+
 export const api = {
   async healthcheck() {
     const response = await fetch(`${API_V1_BASE}/health`, { method: 'GET' });
@@ -58,11 +78,49 @@ export const api = {
     return { completionProbability: data.completion_probability ?? goal.completionProbability };
   },
 
-  async getSkillGap(input: { userId: string; goalId: string }): Promise<SkillGapAnalysis | null> {
-    const response = await fetch(`${API_BASE_URL}/analyze/skill-gap`, {
+  async getSkillGap(input: { userId: string; targetRole: string; userSkills: string[] }): Promise<SkillGapAnalysis | null> {
+    const response = await fetch(`${API_V1_BASE}/skill-gap/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        user_id: input.userId,
+        target_role: input.targetRole,
+        user_skills: input.userSkills,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      goalId: input.targetRole,
+      goalTitle: input.targetRole,
+      requiredSkills: Array.isArray(data.required_skills) ? data.required_skills : [],
+      existingSkills: Array.isArray(data.existing_skills) ? data.existing_skills : [],
+      missingSkills: Array.isArray(data.missing_skills) ? data.missing_skills : [],
+      gapPercentage: Number(data.gap_percentage ?? 0),
+      recommendations: Array.isArray(data.recommendations) ? data.recommendations : [],
+    };
+  },
+
+  async trackBehavior(payload: BehaviorTrackPayload) {
+    const response = await fetch(`${API_V1_BASE}/behavior/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: payload.userId,
+        event_type: payload.eventType,
+        task_completion_minutes: payload.taskCompletionMinutes ?? 0,
+        task_delay_days: payload.taskDelayDays ?? 0,
+        session_duration_minutes: payload.sessionDurationMinutes ?? 0,
+        goal_progress_velocity: payload.goalProgressVelocity ?? 0,
+        completed_task_delta: payload.completedTaskDelta ?? 0,
+        total_task_delta: payload.totalTaskDelta ?? 0,
+        workload_level: payload.workloadLevel ?? 0,
+        active_hours: payload.activeHours ?? 0,
+      }),
     });
 
     if (!response.ok) {
@@ -70,6 +128,27 @@ export const api = {
     }
 
     return response.json();
+  },
+
+  async predictGoal(features: GoalPredictionFeatures & { userId: string }): Promise<{ completionProbability: number }> {
+    const response = await fetch(`${API_V1_BASE}/prediction/goal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: features.userId,
+        consistency_score: features.consistencyScore,
+        delay_ratio: features.delayRatio,
+        completion_velocity: features.completionVelocity,
+        active_hours: features.activeHours,
+      }),
+    });
+
+    if (!response.ok) {
+      return { completionProbability: 0 };
+    }
+
+    const data = await response.json();
+    return { completionProbability: Number(data.completion_probability ?? 0) };
   },
 
   async createEmbedding(payload: EmbeddingPayload): Promise<{ embeddingId: string } | null> {

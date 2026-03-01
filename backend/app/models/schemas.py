@@ -17,6 +17,8 @@ class MemoryIngestResponse(BaseModel):
     embedding_stub: str
     vector_dim: int
     strength_score: float
+    related_node_ids: list[str] = Field(default_factory=list)
+    auto_connections_created: int = 0
 
 
 class MemoryMatch(BaseModel):
@@ -52,6 +54,10 @@ class GoalOptimizeRequest(BaseModel):
     user_id: str
     target_goal: str
     timeline_months: int = Field(ge=1, le=36)
+    consistency_score: float | None = None
+    delay_ratio: float | None = None
+    completion_velocity: float | None = None
+    active_hours: float | None = None
 
 
 class GoalOptimizeResponse(BaseModel):
@@ -87,3 +93,58 @@ class EventSummaryResponse(BaseModel):
     top_events: dict[str, int]
     drop_off_pages: dict[str, int]
     global_top_events: dict[str, int]
+
+
+class BehavioralTrackRequest(BaseModel):
+    user_id: str = Field(min_length=2)
+    event_type: str = Field(min_length=2)
+    task_completion_minutes: float = Field(default=0, ge=0)
+    task_delay_days: float = Field(default=0)
+    session_duration_minutes: float = Field(default=0, ge=0)
+    goal_progress_velocity: float = Field(default=0)
+    completed_task_delta: int = 0
+    total_task_delta: int = 0
+    workload_level: float = Field(default=0, ge=0)
+    active_hours: float = Field(default=0, ge=0)
+
+
+class BehavioralStatsResponse(BaseModel):
+    user_id: str
+    consistency_score: float
+    focus_score: float
+    burnout_risk: float
+    delay_ratio: float
+    completion_velocity: float
+    active_hours: float
+    daily_activity_count: int
+    window_days: int
+
+
+class SkillGapAnalyzeRequest(BaseModel):
+    user_id: str = Field(min_length=2)
+    target_role: str = Field(min_length=2)
+    user_skills: list[str] = Field(default_factory=list)
+
+
+class SkillGapAnalyzeResponse(BaseModel):
+    user_id: str
+    target_role: str
+    required_skills: list[str]
+    existing_skills: list[str]
+    missing_skills: list[str]
+    gap_percentage: float
+    recommendations: list[str]
+
+
+class GoalPredictionRequest(BaseModel):
+    user_id: str = Field(min_length=2)
+    consistency_score: float = Field(ge=0, le=100)
+    delay_ratio: float = Field(ge=0, le=1)
+    completion_velocity: float = Field(ge=0)
+    active_hours: float = Field(ge=0)
+
+
+class GoalPredictionResponse(BaseModel):
+    completion_probability: float
+    model_name: str
+    factors: dict[str, float]

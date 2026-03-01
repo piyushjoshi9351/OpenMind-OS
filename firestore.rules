@@ -189,6 +189,26 @@ service cloud.firestore {
     }
 
     /**
+     * @description Rules for top-level behavioral metrics aggregates.
+     * @path /userMetrics/{userId}/(dailyStats|weeklyStats)/{docId}
+     * @allow Owner read/write access for personal metric aggregates.
+     * @principle Path-based ownership for telemetry written outside /users tree.
+     */
+    match /userMetrics/{userId} {
+      allow get, list: if isOwner(userId);
+
+      match /dailyStats/{docId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId);
+      }
+
+      match /weeklyStats/{docId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId);
+      }
+    }
+
+    /**
      * @description Rules for the global library of skill definitions.
      * @path /skills/{skillId}
      * @allow Any authenticated user (get, list) to reference skills.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, useReducedMotion } from 'framer-motion';
 import { AlarmClock, Bot, BrainCircuit, CalendarCheck2, Flame, Palette, Radar, ShieldAlert, Sparkles, Target, Zap } from 'lucide-react';
@@ -14,8 +14,9 @@ import { GuidedEmptyState } from '@/components/dashboard/GuidedEmptyState';
 import { DataFreshnessIndicator } from '@/components/dashboard/DataFreshnessIndicator';
 import { ErrorFallbackState } from '@/components/dashboard/ErrorFallbackState';
 import { useCognitiveAnalytics, useIntelligenceAddons, useMemoryAssistant, useRealtimeGoals, useRealtimeGraph, useRealtimeTasks } from '@/lib/hooks';
-import { useUser } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { trackFeatureEvent } from '@/lib/event-tracking';
+import { api } from '@/lib/api';
 import { AnimatedCounter } from '@/components/ai/AnimatedCounter';
 import { AIPresencePanel } from '@/components/ai/AIPresencePanel';
 import { NeuralGraphPreview } from '@/components/ai/NeuralGraphPreview';
@@ -25,6 +26,7 @@ import { TypingText } from '@/components/ai/TypingText';
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
 import type { EnergyLevel } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { metricsService } from '@/services';
 
 const NeuralBackground = dynamic(
   () => import('@/components/ai/NeuralBackground').then((module) => module.NeuralBackground),
@@ -57,6 +59,7 @@ const itemVariants = {
 
 export default function Dashboard() {
   const router = useRouter();
+  const firestore = useFirestore();
   const { user } = useUser();
   const [energy, setEnergy] = useState<EnergyLevel>('Medium');
   const [moodMode, setMoodMode] = useState<'Auto' | 'Calm' | 'Focus' | 'Hyper'>('Auto');
@@ -68,6 +71,61 @@ export default function Dashboard() {
   const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
   const intelligence = useIntelligenceAddons(goals, tasks, energy);
   const { assistant, loading: memoryLoading } = useMemoryAssistant(goals, tasks);
+  const goalVelocityRef = useRef<{ avgProgress: number; at: number } | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const sessionStart = Date.now();
+    return () => {
+      const sessionDurationMinutes = Math.max(0, (Date.now() - sessionStart) / 60000);
+      void metricsService.captureBehavior(firestore, {
+        userId: user.uid,
+        sessionDurationMinutes,
+        activeHours: sessionDurationMinutes / 60,
+      }).catch(() => undefined);
+
+      void api.trackBehavior({
+        userId: user.uid,
+        eventType: 'session_closed',
+        sessionDurationMinutes,
+        activeHours: sessionDurationMinutes / 60,
+      }).catch(() => null);
+    };
+  }, [firestore, user]);
+
+  useEffect(() => {
+    if (!user || !goals.length) {
+      goalVelocityRef.current = null;
+      return;
+    }
+
+    const avgProgress = goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length;
+    const now = Date.now();
+
+    if (goalVelocityRef.current) {
+      const elapsedDays = Math.max(1 / 24, (now - goalVelocityRef.current.at) / 86400000);
+      const velocity = (avgProgress - goalVelocityRef.current.avgProgress) / elapsedDays;
+      const pendingTasks = tasks.filter((task) => !task.completed).length;
+
+      void metricsService.captureBehavior(firestore, {
+        userId: user.uid,
+        goalProgressVelocity: velocity,
+        workloadLevel: pendingTasks,
+      }).catch(() => undefined);
+
+      void api.trackBehavior({
+        userId: user.uid,
+        eventType: 'goal_progress_sync',
+        goalProgressVelocity: velocity,
+        workloadLevel: pendingTasks,
+      }).catch(() => null);
+    }
+
+    goalVelocityRef.current = { avgProgress, at: now };
+  }, [firestore, goals, tasks, user]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

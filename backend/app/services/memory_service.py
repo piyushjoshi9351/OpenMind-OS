@@ -28,6 +28,13 @@ class MemoryService:
         vector = embedding_service.embed_text(payload.content)
         node_id = f"node-{uuid.uuid4().hex[:10]}"
 
+        user_memories = self._index.setdefault(payload.user_id, [])
+        related_node_ids = [
+            item.node_id
+            for item in user_memories
+            if embedding_service.cosine_similarity(vector, item.vector) >= 0.74
+        ][:5]
+
         item = MemoryItem(
             node_id=node_id,
             user_id=payload.user_id,
@@ -35,7 +42,7 @@ class MemoryService:
             node_type=payload.node_type,
             vector=vector,
         )
-        self._index.setdefault(payload.user_id, []).append(item)
+        user_memories.append(item)
 
         strength_score = max(10.0, min(99.0, 35.0 + len(payload.content.strip()) * 0.8))
         return MemoryIngestResponse(
@@ -43,6 +50,8 @@ class MemoryService:
             embedding_stub=embedding_service.embedding_signature(payload.content),
             vector_dim=len(vector),
             strength_score=round(strength_score, 2),
+            related_node_ids=related_node_ids,
+            auto_connections_created=len(related_node_ids),
         )
 
     def retrieve(self, payload: MemoryQueryRequest) -> MemoryQueryResponse:
