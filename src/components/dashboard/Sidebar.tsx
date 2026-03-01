@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { 
@@ -16,7 +17,6 @@ import {
   User,
   Settings,
   LogOut,
-  BrainCircuit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -91,7 +91,7 @@ export function Sidebar() {
       <div className="flex h-full w-full flex-col">
         <div className="px-4 py-5 flex items-center gap-3 min-h-[76px]">
           <div className="bg-primary/20 border border-primary/40 p-2 rounded-xl neon-glow">
-            <BrainCircuit className="text-cyan-200 h-6 w-6" />
+            <Image src="/openmind-logo.svg" alt="OpenMind OS" width={24} height={24} className="h-6 w-6" priority />
           </div>
           <div className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap">
             <p className="font-headline text-lg font-bold tracking-tight">OpenMind OS</p>
