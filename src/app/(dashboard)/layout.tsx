@@ -46,8 +46,14 @@ export default function DashboardLayout({
       <SystemTopBar />
       <div className="flex min-h-[calc(100vh-3.5rem)]">
         <Sidebar />
-        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-8">
-          {children}
+        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-8 relative">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(16,25,52,0.35)_0%,rgba(9,13,30,0.6)_45%,rgba(20,12,44,0.45)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 hud-grid opacity-30" />
+          <div className="pointer-events-none absolute -top-20 left-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute top-12 right-20 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl" />
+          <div className="relative z-10">
+            {children}
+          </div>
         </main>
       </div>
       <MobileBottomNav />

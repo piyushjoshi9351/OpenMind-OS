@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 interface CommandEntry {
   title: string;
   description: string;
+  group: 'Navigate' | 'Context';
   action: () => void;
 }
 
@@ -25,25 +26,66 @@ export function CommandPalette() {
     return () => window.removeEventListener('om:command-palette-open', onOpen);
   }, []);
 
-  const entries = useMemo<CommandEntry[]>(() => [
-    { title: 'Go to Dashboard', description: 'Open AI core workspace', action: () => router.push('/dashboard') },
-    { title: 'Open Intelligence', description: 'View cognitive insights', action: () => router.push('/insights') },
-    { title: 'Open Tasks', description: 'Jump to execution board', action: () => router.push('/tasks') },
-    { title: 'Open Goals', description: 'Manage strategic objectives', action: () => router.push('/goals') },
-    { title: 'Open Roadmap', description: 'Generate and execute roadmap', action: () => router.push('/roadmap') },
-    { title: 'Open Knowledge Graph', description: 'Research and connect nodes', action: () => router.push('/graph') },
-    {
-      title: 'Quick Add Task Focus',
-      description: 'Move to tasks and focus quick input',
-      action: () => {
-        if (pathname !== '/tasks') {
-          router.push('/tasks?quickAdd=1');
-          return;
-        }
-        window.dispatchEvent(new Event('om:quick-add-focus'));
+  const entries = useMemo<CommandEntry[]>(() => {
+    const baseEntries: CommandEntry[] = [
+      { title: 'Go to Dashboard', description: 'Open AI core workspace', group: 'Navigate', action: () => router.push('/dashboard') },
+      { title: 'Open Intelligence', description: 'View cognitive insights', group: 'Navigate', action: () => router.push('/insights') },
+      { title: 'Open Tasks', description: 'Jump to execution board', group: 'Navigate', action: () => router.push('/tasks') },
+      { title: 'Open Goals', description: 'Manage strategic objectives', group: 'Navigate', action: () => router.push('/goals') },
+      { title: 'Open Roadmap', description: 'Generate and execute roadmap', group: 'Navigate', action: () => router.push('/roadmap') },
+      { title: 'Open Knowledge Graph', description: 'Research and connect nodes', group: 'Navigate', action: () => router.push('/graph') },
+      {
+        title: 'Quick Add Task Focus',
+        description: 'Move to tasks and focus quick input',
+        group: 'Navigate',
+        action: () => {
+          if (pathname !== '/tasks') {
+            router.push('/tasks?quickAdd=1');
+            return;
+          }
+          window.dispatchEvent(new Event('om:quick-add-focus'));
+        },
       },
-    },
-  ], [pathname, router]);
+    ];
+
+    const contextEntries: CommandEntry[] = [];
+
+    if (pathname === '/tasks') {
+      contextEntries.push({
+        title: 'Complete First Pending Task',
+        description: 'Runs quick complete action for top pending task',
+        group: 'Context',
+        action: () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })),
+      });
+    }
+
+    if (pathname === '/insights') {
+      contextEntries.push({
+        title: 'Toggle Advanced Insights',
+        description: 'Show or hide advanced insight chips',
+        group: 'Context',
+        action: () => window.dispatchEvent(new Event('om:insights-toggle-advanced')),
+      });
+    }
+
+    if (pathname === '/dashboard') {
+      contextEntries.push({
+        title: 'Activate Deep Focus',
+        description: 'Triggers dashboard deep-focus workflow',
+        group: 'Context',
+        action: () => window.dispatchEvent(new Event('om:dashboard-deep-focus')),
+      });
+    }
+
+    contextEntries.push({
+      title: 'Refresh Current Module',
+      description: 'Reloads active page workspace state',
+      group: 'Context',
+      action: () => router.refresh(),
+    });
+
+    return [...baseEntries, ...contextEntries];
+  }, [pathname, router]);
 
   const filtered = entries.filter((entry) => {
     const source = `${entry.title} ${entry.description}`.toLowerCase();
@@ -74,7 +116,7 @@ export function CommandPalette() {
           <div className="max-h-[360px] overflow-auto space-y-2 pr-1">
             {filtered.map((entry) => (
               <Button
-                key={entry.title}
+                key={`${entry.group}-${entry.title}`}
                 variant="ghost"
                 className="w-full justify-between h-auto rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-left hover:bg-primary/15"
                 onClick={() => {
@@ -87,7 +129,10 @@ export function CommandPalette() {
                   <p className="text-sm font-medium">{entry.title}</p>
                   <p className="text-xs text-muted-foreground">{entry.description}</p>
                 </div>
-                <Sparkles className="h-4 w-4 text-cyan-300" />
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{entry.group}</p>
+                  <Sparkles className="h-4 w-4 text-cyan-300 ml-auto" />
+                </div>
               </Button>
             ))}
             {!filtered.length && <p className="text-xs text-muted-foreground px-1">No matching command found.</p>}
