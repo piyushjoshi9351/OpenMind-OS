@@ -269,6 +269,7 @@ export default function Dashboard() {
   const displayVelocity = advancedAnalytics.completionVelocity > 0 ? advancedAnalytics.completionVelocity : seededValue(goals.length * 17 + tasks.length * 3 + 5, 1, 3) / 10;
   const displayLearningAcceleration = advancedAnalytics.learningAcceleration > 0 ? advancedAnalytics.learningAcceleration : seededValue(goals.length * 29 + tasks.length * 2 + 3, 11, 17) / 10;
   const displayActiveGoals = dashboardSnapshot.activeGoals > 0 ? dashboardSnapshot.activeGoals : Math.max(1, Math.min(5, goals.length || 2));
+  const cognitiveLoadLevel = Math.max(10, Math.min(100, Math.round(dashboardSnapshot.burnoutRisk * 0.65 + advancedAnalytics.delayRatio * 100 * 0.35)));
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden rounded-3xl border border-white/10 data-stream spatial-stack">
@@ -402,7 +403,15 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ) : (
-                  <AICore3D activityLevel={activityLevel} productivity={completionRatio} syncActive={syncPulseActive} completionFlashKey={completionFlashKey} />
+                  <AICore3D
+                    activityLevel={activityLevel}
+                    productivity={completionRatio}
+                    focusLevel={displayFocus}
+                    consistencyLevel={displayConsistency}
+                    cognitiveLoad={cognitiveLoadLevel}
+                    syncActive={syncPulseActive}
+                    completionFlashKey={completionFlashKey}
+                  />
                 )}
               </CardContent>
 
