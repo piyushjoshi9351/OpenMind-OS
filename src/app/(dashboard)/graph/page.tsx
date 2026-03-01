@@ -198,6 +198,7 @@ export default function GraphPage() {
         <AnimatePresence>
           {selectedNode && (
             <motion.aside
+              key={selectedNode.id}
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 30 }}

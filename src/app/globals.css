@@ -66,6 +66,10 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   * {
     @apply border-border;
   }
@@ -258,6 +262,66 @@
   .graph-shimmer {
     animation: graph-shimmer 2.8s ease-in-out infinite;
   }
+
+  .landing-noise::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.55px, transparent 0.55px);
+    background-size: 2px 2px;
+    opacity: 0.025;
+    mix-blend-mode: soft-light;
+  }
+
+  .landing-grid {
+    background-image: linear-gradient(rgba(90, 160, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(90, 160, 255, 0.08) 1px, transparent 1px), linear-gradient(135deg, rgba(164, 111, 255, 0.06) 1px, transparent 1px);
+    background-size: 52px 52px, 52px 52px, 80px 80px;
+    mask-image: radial-gradient(circle at center, black 42%, transparent 96%);
+    animation: landing-grid-drift 24s linear infinite;
+  }
+
+  .landing-ticker {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .landing-ticker-track {
+    display: inline-flex;
+    gap: 2.2rem;
+    min-width: max-content;
+    animation: landing-ticker 24s linear infinite;
+  }
+
+  .landing-ticker-item {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: rgba(198, 232, 255, 0.82);
+    text-transform: none;
+  }
+
+  .landing-feature-card {
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transition: border-color 220ms ease, background 220ms ease;
+  }
+
+  .landing-feature-card::before {
+    content: '';
+    position: absolute;
+    inset: -40% -15%;
+    background: linear-gradient(112deg, transparent 30%, rgba(125, 186, 255, 0.2) 48%, transparent 66%);
+    transform: translateX(-42%);
+    transition: transform 460ms ease;
+    pointer-events: none;
+  }
+
+  .landing-feature-card:hover::before {
+    transform: translateX(42%);
+  }
 }
 
 @keyframes thinking-dots {
@@ -315,6 +379,16 @@
   25% { transform: translateX(-2px); }
   50% { transform: translateX(2px); }
   75% { transform: translateX(-2px); }
+}
+
+@keyframes landing-grid-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(24px, 16px, 0); }
+}
+
+@keyframes landing-ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-ripple {

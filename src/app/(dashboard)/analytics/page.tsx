@@ -108,8 +108,8 @@ export default function AnalyticsPage() {
           { label: 'Burnout Risk', value: dashboardSnapshot.burnoutRisk, icon: Timer, suffix: '%' },
           { label: 'Focus Index', value: dashboardSnapshot.focusScore, icon: Gauge, suffix: '%' },
           { label: 'Learning Boost', value: Number(advancedAnalytics.learningAcceleration.toFixed(2)), icon: TrendingUp, suffix: 'x' },
-        ].map((metric) => (
-          <TiltPanel key={metric.label} className="glass-panel rounded-2xl p-4 relative overflow-hidden">
+        ].map((metric, index) => (
+          <TiltPanel key={`metric-${index}-${metric.label}`} className="glass-panel rounded-2xl p-4 relative overflow-hidden">
             <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-cyan-300/80 via-blue-400/70 to-purple-400/70" />
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-muted-foreground">
               <span>{metric.label}</span>

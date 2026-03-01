@@ -161,6 +161,7 @@ export default function RoadmapPage() {
       <AnimatePresence mode="wait">
         {isLoading && (
           <motion.div 
+            key="roadmap-loading"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
@@ -182,6 +183,7 @@ export default function RoadmapPage() {
 
         {roadmap && !isLoading && (
           <motion.div
+            key="roadmap-content"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
@@ -291,6 +293,7 @@ export default function RoadmapPage() {
 
         {!roadmap && !isLoading && (
           <motion.div 
+            key="roadmap-empty"
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }}
             className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed border-muted rounded-2xl"

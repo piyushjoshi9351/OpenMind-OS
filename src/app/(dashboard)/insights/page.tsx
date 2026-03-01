@@ -177,8 +177,8 @@ export default function InsightsPage() {
 
       {showAdvanced && (
         <div className="flex flex-wrap gap-2">
-          {trendChips.map((chip) => (
-            <Badge key={chip.label} variant="outline" className="px-3 py-1.5 gap-1">
+          {trendChips.map((chip, index) => (
+            <Badge key={`trend-chip-${index}-${chip.label}`} variant="outline" className="px-3 py-1.5 gap-1">
               {chip.up ? <ArrowUpRight className="h-3.5 w-3.5 text-cyan-300" /> : <ArrowDownRight className="h-3.5 w-3.5 text-rose-300" />}
               <span>{chip.label}: {chip.value}</span>
             </Badge>
@@ -305,8 +305,8 @@ export default function InsightsPage() {
           <CardDescription>Short actions based on your current cognitive signals.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {shortRecommendations.map((item) => (
-            <p key={item} className="text-sm text-muted-foreground">• {item}</p>
+          {shortRecommendations.map((item, index) => (
+            <p key={`recommendation-${index}-${item.slice(0, 24)}`} className="text-sm text-muted-foreground">• {item}</p>
           ))}
         </CardContent>
       </Card>

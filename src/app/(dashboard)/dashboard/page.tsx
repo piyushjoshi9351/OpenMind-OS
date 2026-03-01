@@ -241,10 +241,10 @@ export default function Dashboard() {
       : uiTone === 'active'
         ? 'bg-[radial-gradient(circle_at_22%_16%,rgba(76,170,255,0.18),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(145,94,255,0.17),transparent_35%)]'
         : 'bg-[radial-gradient(circle_at_22%_16%,rgba(64,144,225,0.12),transparent_38%),radial-gradient(circle_at_88%_5%,rgba(118,92,195,0.11),transparent_35%)]';
-  const proactiveSuggestions = [
+  const proactiveSuggestions = Array.from(new Set([
     ...(tasks.length === 0 ? ['No tasks detected. Create one execution task to activate AI planning guidance.'] : []),
     ...(dashboardSnapshot.focusScore < 50 ? ['Focus is low. Activate Deep Focus and complete one short task to recover momentum.'] : []),
-  ];
+  ]));
 
   if (hasNoData) {
     return (
@@ -338,8 +338,8 @@ export default function Dashboard() {
 
         {!!proactiveSuggestions.length && (
           <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {proactiveSuggestions.map((item) => (
-              <Card key={item} className="om-card-primary">
+            {proactiveSuggestions.map((item, index) => (
+              <Card key={`proactive-${index}-${item.slice(0, 24)}`} className="om-card-primary">
                 <CardContent className="p-3 text-sm text-cyan-100/90">{item}</CardContent>
               </Card>
             ))}
@@ -431,8 +431,8 @@ export default function Dashboard() {
                 { label: 'Consistency', value: displayConsistency, icon: Flame },
                 { label: 'Focus Index', value: displayFocus, icon: Zap },
                 { label: 'Burnout Risk', value: dashboardSnapshot.burnoutRisk, icon: Radar },
-              ].map((item) => (
-                <motion.div key={item.label} whileHover={{ y: -3, scale: 1.02, rotate: 1.2 }} className="glass-panel rounded-xl p-3 inner-shadow-panel micro-tilt">
+              ].map((item, index) => (
+                <motion.div key={`signal-${index}-${item.label}`} whileHover={{ y: -3, scale: 1.02, rotate: 1.2 }} className="glass-panel rounded-xl p-3 inner-shadow-panel micro-tilt">
                   <div className="flex items-center justify-between text-xs text-muted-foreground uppercase tracking-[0.14em]">
                     <span>{item.label}</span>
                     <item.icon className="h-4 w-4 text-primary" />
@@ -546,7 +546,7 @@ export default function Dashboard() {
                 </div>
                 <Progress value={intelligence.weeklyReview.completionRate} className="h-2 bg-primary/10" />
                 <div className="space-y-2 text-xs text-muted-foreground">
-                  {intelligence.weeklyReview.highlights.map((highlight) => <p key={highlight}>• {highlight}</p>)}
+                  {intelligence.weeklyReview.highlights.map((highlight, index) => <p key={`highlight-${index}-${highlight.slice(0, 20)}`}>• {highlight}</p>)}
                 </div>
               </CardContent>
             </Card>
@@ -614,8 +614,8 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-xs text-muted-foreground">Query context: {assistant.query}</p>
-                {memoryLoading ? <Skeleton className="h-20 w-full" /> : assistant.suggestions.map((item) => (
-                  <div key={item.title} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                {memoryLoading ? <Skeleton className="h-20 w-full" /> : assistant.suggestions.map((item, index) => (
+                  <div key={`assistant-${index}-${item.title}`} className="rounded-xl border border-white/10 bg-black/20 p-3">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-primary font-semibold">{item.title}</span>
                       <span className="text-muted-foreground">Confidence {(item.confidence * 100).toFixed(0)}%</span>
