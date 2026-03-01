@@ -8,8 +8,13 @@ class EmbeddingService:
         self.dimensions = dimensions
         self._model = None
         self._model_load_failed = False
+        self._last_error: str | None = None
 
     def _get_model(self):
+        settings = get_settings()
+        if settings.enable_ml_stubs:
+            return None
+
         if self._model is not None:
             return self._model
         if self._model_load_failed:
@@ -18,11 +23,12 @@ class EmbeddingService:
         try:
             from sentence_transformers import SentenceTransformer
 
-            settings = get_settings()
             self._model = SentenceTransformer(settings.embedding_model)
+            self._last_error = None
             return self._model
-        except Exception:
+        except Exception as exc:
             self._model_load_failed = True
+            self._last_error = str(exc)
             return None
 
     def embed_text(self, content: str) -> list[float]:
@@ -47,6 +53,21 @@ class EmbeddingService:
         settings = get_settings()
         prefix = "sbert" if self._get_model() is not None else "stub"
         return f"{prefix}::{settings.embedding_model}::{self.dimensions}::{len(content)}"
+
+    def warmup_model(self) -> bool:
+        return self._get_model() is not None
+
+    def runtime_status(self) -> dict[str, object]:
+        settings = get_settings()
+        is_loaded = self._model is not None
+        return {
+            "model_name": settings.embedding_model,
+            "stubs_enabled": settings.enable_ml_stubs,
+            "model_loaded": is_loaded,
+            "mode": "stub" if settings.enable_ml_stubs or not is_loaded else "sentence-transformers",
+            "last_error": self._last_error,
+            "dimensions": self.dimensions,
+        }
 
     @staticmethod
     def cosine_similarity(left: list[float], right: list[float]) -> float:

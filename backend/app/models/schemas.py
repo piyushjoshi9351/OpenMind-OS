@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 class HealthResponse(BaseModel):
     status: str
     service: str
+    dependencies: dict[str, str] = Field(default_factory=dict)
+    embedding: dict[str, object] = Field(default_factory=dict)
+    memory: dict[str, object] = Field(default_factory=dict)
 
 
 class MemoryIngestRequest(BaseModel):

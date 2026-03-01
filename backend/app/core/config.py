@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import List
 
 from pydantic import Field
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,32 @@ class Settings(BaseSettings):
 
     embedding_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2", alias="EMBEDDING_MODEL")
     enable_ml_stubs: bool = Field(default=True, alias="ENABLE_ML_STUBS")
+    preload_embedding_model: bool = Field(default=False, alias="PRELOAD_EMBEDDING_MODEL")
+
+    memory_store_backend: str = Field(default="sqlite", alias="MEMORY_STORE_BACKEND")
+    memory_sqlite_path: str = Field(default="./.cache/openmind_memory.sqlite3", alias="MEMORY_SQLITE_PATH")
+
+    @field_validator("backend_cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: object) -> List[str]:
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return []
+            if normalized.startswith("[") and normalized.endswith("]"):
+                return [item.strip().strip('"').strip("'") for item in normalized[1:-1].split(",") if item.strip()]
+            return [item.strip() for item in normalized.split(",") if item.strip()]
+        return ["http://localhost:9002"]
+
+    @field_validator("memory_store_backend")
+    @classmethod
+    def validate_memory_store_backend(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"sqlite", "memory"}:
+            raise ValueError("MEMORY_STORE_BACKEND must be either 'sqlite' or 'memory'")
+        return normalized
 
 
 @lru_cache

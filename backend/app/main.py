@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
+from app.services.embedding_service import embedding_service
 
 
 settings = get_settings()
@@ -24,3 +25,9 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+
+
+@app.on_event("startup")
+def warmup_embedding_model() -> None:
+    if settings.preload_embedding_model and not settings.enable_ml_stubs:
+        embedding_service.warmup_model()
