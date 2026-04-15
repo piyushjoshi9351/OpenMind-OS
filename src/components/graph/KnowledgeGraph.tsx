@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { GraphClusterInsight, GraphDataModel } from '@/types';
 
@@ -22,12 +22,40 @@ const NODE_COLOR_BY_TYPE: Record<GraphDataModel['nodes'][number]['type'], string
 };
 
 export function KnowledgeGraph({ data, weakClusters, selectedNodeId, onSelectNode }: GraphProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const updateWidth = () => {
+      setViewportWidth(container.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(() => {
+      updateWidth();
+    });
+
+    observer.observe(container);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
 
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const width = svgRef.current.clientWidth;
+    const width = viewportWidth || svgRef.current.clientWidth;
+    if (!width) return;
     const height = 600;
     const weakNodeIds = new Set(weakClusters.flatMap((cluster) => cluster.nodeIds));
 
@@ -164,11 +192,19 @@ export function KnowledgeGraph({ data, weakClusters, selectedNodeId, onSelectNod
     return () => {
       simulation.stop();
     };
-  }, [data, onSelectNode, selectedNodeId, weakClusters]);
+  }, [data, onSelectNode, selectedNodeId, viewportWidth, weakClusters]);
 
   return (
-    <div className="w-full h-full bg-card/60 backdrop-blur-xl rounded-2xl border border-border overflow-hidden relative">
+    <div ref={containerRef} className="w-full h-full bg-card/60 backdrop-blur-xl rounded-2xl border border-border overflow-hidden relative">
       <svg ref={svgRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+      {!data.nodes.length && (
+        <div className="absolute inset-0 grid place-items-center pointer-events-none">
+          <div className="rounded-xl border border-cyan-300/20 bg-background/85 px-4 py-3 text-center">
+            <p className="text-sm text-cyan-100">Graph canvas is ready</p>
+            <p className="text-xs text-muted-foreground mt-1">Create your first knowledge node to visualize links.</p>
+          </div>
+        </div>
+      )}
       <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm p-3 rounded-lg border border-border text-xs space-y-2">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-400" /> <span>Skill</span>

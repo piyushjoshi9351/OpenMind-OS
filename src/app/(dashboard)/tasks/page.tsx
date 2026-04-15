@@ -345,8 +345,8 @@ export default function TasksPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {aiRecommendedTasks.length ? aiRecommendedTasks.map((task) => (
-              <div key={task.id} className="rounded-xl border border-white/10 bg-black/20 p-3">
+            {aiRecommendedTasks.length ? aiRecommendedTasks.map((task, index) => (
+              <div key={`recommended-${task.id}-${task.goalId}-${index}`} className="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium truncate">{task.title}</p>
                   <Badge className="bg-primary/20 border border-primary/30 text-cyan-100">Score {task.aiScore}</Badge>
@@ -436,9 +436,9 @@ export default function TasksPage() {
                 </div>
 
                 <AnimatePresence initial={false}>
-                  {group.items.map((task) => (
+                  {group.items.map((task, index) => (
                     <motion.div
-                      key={task.id}
+                      key={`task-card-${task.id}-${task.goalId}-${index}`}
                       layout
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}

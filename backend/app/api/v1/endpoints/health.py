@@ -5,6 +5,7 @@ from app.db.neo4j import get_driver
 from app.db.postgres import engine
 from app.models.schemas import HealthResponse
 from app.services.embedding_service import embedding_service
+from app.services.goal_model_service import goal_model_service
 from app.services.memory_service import memory_service
 
 
@@ -43,4 +44,5 @@ def health() -> HealthResponse:
         dependencies=dependencies,
         embedding=embedding_service.runtime_status(),
         memory=memory_service.runtime_status(),
+        ml=goal_model_service.runtime_status(),
     )

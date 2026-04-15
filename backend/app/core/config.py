@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     embedding_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2", alias="EMBEDDING_MODEL")
     enable_ml_stubs: bool = Field(default=True, alias="ENABLE_ML_STUBS")
     preload_embedding_model: bool = Field(default=False, alias="PRELOAD_EMBEDDING_MODEL")
+    goal_prediction_model_path: str = Field(
+        default="./app/data/goal_prediction_model.json",
+        alias="GOAL_PREDICTION_MODEL_PATH",
+    )
+    goal_prediction_model_version: str = Field(default="goal_predictor_v2", alias="GOAL_PREDICTION_MODEL_VERSION")
 
     memory_store_backend: str = Field(default="sqlite", alias="MEMORY_STORE_BACKEND")
     memory_sqlite_path: str = Field(default="./.cache/openmind_memory.sqlite3", alias="MEMORY_SQLITE_PATH")

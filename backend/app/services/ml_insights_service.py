@@ -62,6 +62,8 @@ class MLInsightsService:
             recommendations.append("Run a focused 2-week upskilling sprint for top missing role skills.")
         if prediction.completion_probability < 55:
             recommendations.append("Increase active learning hours and close at least one delayed task daily.")
+        if prediction.confidence_score is not None and prediction.confidence_score < 60:
+            recommendations.append("Collect more execution telemetry this week to improve forecast confidence.")
 
         recommendations.extend(skill_gap.recommendations[:2])
         if not recommendations:
@@ -70,7 +72,7 @@ class MLInsightsService:
         return MLInsightsResponse(
             user_id=payload.user_id,
             target_role=skill_gap.target_role,
-            model_name="python_ml_fusion_v1",
+            model_name=f"python_ml_fusion_v2::{prediction.model_name}",
             ai_readiness_score=round(ai_readiness_score, 2),
             execution_score=round(execution_score, 2),
             risk_score=round(risk_score, 2),

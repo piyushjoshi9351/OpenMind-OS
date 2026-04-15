@@ -10,6 +10,7 @@ import { getUserRole, validateSecureToken } from '@/lib/auth';
 import { analyticsService, goalService, graphService, intelligenceService, metricsService, taskService } from '@/services';
 import type {
   BehaviorMetrics,
+  CognitiveAnalyticsResult,
   DashboardSnapshot,
   EnergyLevel,
   GoalModel,
@@ -183,24 +184,35 @@ export function useRealtimeGraph() {
   const [nodes, setNodes] = useState<KnowledgeNodeModel[]>([]);
   const [edges, setEdges] = useState<KnowledgeEdgeModel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       setNodes([]);
       setEdges([]);
       setLoading(false);
+      setError(null);
       return;
     }
+
+    setError(null);
+    setLoading(true);
 
     const unsubNodes = graphService.subscribeNodes(firestore, user.uid, (items) => {
       setNodes(items);
       setLoading(false);
-    }, () => setLoading(false));
+    }, (snapshotError) => {
+      setError(snapshotError.message);
+      setLoading(false);
+    });
 
     const unsubEdges = graphService.subscribeEdges(firestore, user.uid, (items) => {
       setEdges(items);
       setLoading(false);
-    }, () => setLoading(false));
+    }, (snapshotError) => {
+      setError(snapshotError.message);
+      setLoading(false);
+    });
 
     return () => {
       unsubNodes();
@@ -217,6 +229,7 @@ export function useRealtimeGraph() {
     graphData,
     weakClusters,
     loading,
+    error,
   };
 }
 
@@ -378,4 +391,182 @@ export function useMemoryAssistant(goals: GoalModel[], tasks: TaskModel[]) {
     loading,
     assistant,
   };
+}
+
+export interface LiveMLSignals {
+  loading: boolean;
+  error: string | null;
+  targetRole: string;
+  prediction: {
+    completionProbability: number;
+    confidenceScore: number;
+    modelName: string;
+  } | null;
+  insights: {
+    readinessScore: number;
+    riskScore: number;
+    recommendedActions: string[];
+    modelName: string;
+  } | null;
+  simulation: {
+    successProbability: number;
+    confidenceLow: number;
+    confidenceHigh: number;
+    opportunityCost: 'low' | 'medium' | 'high';
+    estimatedMonths: number;
+  } | null;
+}
+
+const inferTargetRoleFromGoal = (goalTitle: string): string => {
+  const lower = goalTitle.toLowerCase();
+  if (lower.includes('backend')) {
+    return 'backend_engineer';
+  }
+  if (lower.includes('product')) {
+    return 'product_manager';
+  }
+  if (lower.includes('data')) {
+    return 'data_scientist';
+  }
+  return 'ai_engineer';
+};
+
+export function useLiveMLSignals(
+  goals: GoalModel[],
+  tasks: TaskModel[],
+  dashboardSnapshot: DashboardSnapshot,
+  advancedAnalytics: CognitiveAnalyticsResult,
+): LiveMLSignals {
+  const { user } = useUser();
+  const [state, setState] = useState<LiveMLSignals>({
+    loading: false,
+    error: null,
+    targetRole: 'ai_engineer',
+    prediction: null,
+    insights: null,
+    simulation: null,
+  });
+
+  const activeGoal = useMemo(() => {
+    const active = goals.filter((goal) => goal.status !== 'Archived');
+    if (!active.length) {
+      return null;
+    }
+
+    return [...active].sort((leftGoal, rightGoal) => {
+      const priorityScore = { High: 3, Medium: 2, Low: 1 };
+      const byPriority = priorityScore[rightGoal.priority] - priorityScore[leftGoal.priority];
+      if (byPriority !== 0) {
+        return byPriority;
+      }
+      return new Date(leftGoal.deadline).getTime() - new Date(rightGoal.deadline).getTime();
+    })[0];
+  }, [goals]);
+
+  useEffect(() => {
+    if (!user || !activeGoal) {
+      setState((current) => ({
+        ...current,
+        loading: false,
+        error: null,
+        targetRole: 'ai_engineer',
+        prediction: null,
+        insights: null,
+        simulation: null,
+      }));
+      return;
+    }
+
+    let isMounted = true;
+    const targetRole = inferTargetRoleFromGoal(activeGoal.title);
+    const userSkills = Array.from(
+      new Set(
+        tasks
+          .flatMap((task) => task.tags)
+          .concat(goals.map((goal) => goal.category))
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      ),
+    ).slice(0, 16);
+
+    setState((current) => ({ ...current, loading: true, error: null, targetRole }));
+
+    const predictionPromise = api.predictGoal({
+      userId: user.uid,
+      consistencyScore: dashboardSnapshot.consistencyScore,
+      delayRatio: advancedAnalytics.delayRatio,
+      completionVelocity: advancedAnalytics.completionVelocity,
+      activeHours: Math.max(0.2, Math.min(8, tasks.reduce((sum, task) => sum + (task.completed ? Math.max(task.actualTime, task.estimatedTime) : 0), 0) / 60)),
+    });
+
+    const insightsPromise = api.getMLInsights({
+      userId: user.uid,
+      targetRole,
+      userSkills,
+      windowDays: 7,
+    });
+
+    const simulationPromise = api.simulateScenario({
+      userId: user.uid,
+      scenario: activeGoal.title,
+      consistencyScore: dashboardSnapshot.consistencyScore,
+      delayRatio: advancedAnalytics.delayRatio,
+      completionVelocity: advancedAnalytics.completionVelocity,
+      activeHours: Math.max(0.2, Math.min(8, tasks.length ? tasks.reduce((sum, task) => sum + task.estimatedTime, 0) / tasks.length / 60 : 1.2)),
+    });
+
+    void Promise.all([predictionPromise, insightsPromise, simulationPromise])
+      .then(([prediction, insights, simulation]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setState({
+          loading: false,
+          error: null,
+          targetRole,
+          prediction: prediction
+            ? {
+              completionProbability: Number(prediction.completion_probability ?? 0),
+              confidenceScore: Number(prediction.confidence_score ?? 0),
+              modelName: String(prediction.model_name ?? 'unknown'),
+            }
+            : null,
+          insights: insights
+            ? {
+              readinessScore: Number(insights.ai_readiness_score ?? 0),
+              riskScore: Number(insights.risk_score ?? 0),
+              recommendedActions: Array.isArray(insights.recommended_actions) ? insights.recommended_actions : [],
+              modelName: String(insights.model_name ?? 'unknown'),
+            }
+            : null,
+          simulation: simulation
+            ? {
+              successProbability: Number(simulation.success_probability ?? 0),
+              confidenceLow: Number(simulation.confidence_interval_low ?? 0),
+              confidenceHigh: Number(simulation.confidence_interval_high ?? 0),
+              opportunityCost: simulation.opportunity_cost,
+              estimatedMonths: Number(simulation.estimated_months ?? 0),
+            }
+            : null,
+        });
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setState((current) => ({
+          ...current,
+          loading: false,
+          error: error instanceof Error ? error.message : 'ML backend unavailable',
+        }));
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeGoal, advancedAnalytics.completionVelocity, advancedAnalytics.delayRatio, dashboardSnapshot.consistencyScore, goals, tasks, user]);
+
+  return state;
 }

@@ -21,7 +21,7 @@ export default function GraphPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const { graphData, loading, weakClusters } = useRealtimeGraph();
+  const { graphData, loading, weakClusters, error } = useRealtimeGraph();
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [nodeTitle, setNodeTitle] = useState('');
@@ -31,9 +31,16 @@ export default function GraphPage() {
   const [relationType, setRelationType] = useState('related_to');
 
   const selectedNode = useMemo(() => graphData.nodes.find((node) => node.id === selectedNodeId) ?? null, [graphData.nodes, selectedNodeId]);
+  const canCreateRelation = graphData.nodes.length > 1;
 
   const createNode = async () => {
-    if (!user || !nodeTitle.trim()) {
+    if (!user) {
+      toast({ title: 'Login required', description: 'Please login to create graph nodes.', variant: 'destructive' });
+      return;
+    }
+
+    if (!nodeTitle.trim()) {
+      toast({ title: 'Node title required', description: 'Enter a title before adding a node.', variant: 'destructive' });
       return;
     }
     try {
@@ -51,7 +58,18 @@ export default function GraphPage() {
   };
 
   const createEdge = async () => {
-    if (!user || !sourceId || !targetId || sourceId === targetId) {
+    if (!user) {
+      toast({ title: 'Login required', description: 'Please login to create relations.', variant: 'destructive' });
+      return;
+    }
+
+    if (!canCreateRelation) {
+      toast({ title: 'Need at least 2 nodes', description: 'Create two nodes before linking knowledge.', variant: 'destructive' });
+      return;
+    }
+
+    if (!sourceId || !targetId || sourceId === targetId) {
+      toast({ title: 'Invalid relation', description: 'Choose different source and target nodes.', variant: 'destructive' });
       return;
     }
     try {
@@ -83,6 +101,22 @@ export default function GraphPage() {
             Initializing graph engine...
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-4">
+        <Card className="border border-rose-400/30 bg-rose-500/10">
+          <CardHeader>
+            <CardTitle className="text-rose-100">Graph sync failed</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-rose-100/90 space-y-2">
+            <p>{error}</p>
+            <p>Check Firebase auth/session and Firestore permissions for knowledge graph collections.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -126,22 +160,23 @@ export default function GraphPage() {
 
           <div className="space-y-2">
             <Label>Source node</Label>
-            <Select value={sourceId} onValueChange={setSourceId}>
+            <Select value={sourceId} onValueChange={setSourceId} disabled={!canCreateRelation}>
               <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
-              <SelectContent>{graphData.nodes.map((node) => <SelectItem key={node.id} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
+              <SelectContent>{graphData.nodes.map((node, index) => <SelectItem key={`source-node-${node.id}-${node.title.slice(0, 20)}-${index}`} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Target node</Label>
-            <Select value={targetId} onValueChange={setTargetId}>
+            <Select value={targetId} onValueChange={setTargetId} disabled={!canCreateRelation}>
               <SelectTrigger><SelectValue placeholder="Select target" /></SelectTrigger>
-              <SelectContent>{graphData.nodes.map((node) => <SelectItem key={node.id} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
+              <SelectContent>{graphData.nodes.map((node, index) => <SelectItem key={`target-node-${node.id}-${node.title.slice(0, 20)}-${index}`} value={node.id}>{node.title}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>Relation type</Label>
             <Input value={relationType} onChange={(event) => setRelationType(event.target.value)} placeholder="depends_on" />
-            <Button variant="outline" className="w-full" onClick={createEdge}><Network className="h-4 w-4 mr-1" /> Create Relation</Button>
+            <Button variant="outline" className="w-full" onClick={createEdge} disabled={!canCreateRelation}><Network className="h-4 w-4 mr-1" /> Create Relation</Button>
+            {!canCreateRelation && <p className="text-xs text-muted-foreground">Create at least two nodes to enable source/target options.</p>}
           </div>
         </CardContent>
       </Card>

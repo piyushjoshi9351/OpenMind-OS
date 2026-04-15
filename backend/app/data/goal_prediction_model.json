@@ -1,0 +1,24 @@
+{
+  "version": "goal_predictor_v2",
+  "trained_at": "2026-04-15T19:52:12.899920+00:00",
+  "sample_count": 62,
+  "weights": {
+    "bias": 0.0500754341504936,
+    "consistency_score": 1.198791598000972,
+    "delay_ratio": -1.1161547263056453,
+    "completion_velocity": 1.1289633405555248,
+    "active_hours": 1.1575154287246632
+  },
+  "means": {
+    "consistency_score": 57.38775510204081,
+    "delay_ratio": 0.3153061224489796,
+    "completion_velocity": 1.7489795918367346,
+    "active_hours": 2.5979591836734692
+  },
+  "stds": {
+    "consistency_score": 16.605649796515483,
+    "delay_ratio": 0.1778912995407913,
+    "completion_velocity": 0.9311223091976412,
+    "active_hours": 1.2002533399106543
+  }
+}

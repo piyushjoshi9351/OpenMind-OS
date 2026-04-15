@@ -15,7 +15,10 @@
     "test:backend": "cd backend && pytest",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "predeploy:frontend": "npm run lint && npm run typecheck && npm run build",
+    "predeploy:backend": "cd backend && .venv\\Scripts\\python scripts/train_goal_model.py --dataset data/training/sample_goal_training_data.csv --report-out data/training/goal_model_validation_report.json && .venv\\Scripts\\python scripts/predeploy_check.py --strict",
+    "predeploy:all": "npm run predeploy:frontend && npm run predeploy:backend"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",

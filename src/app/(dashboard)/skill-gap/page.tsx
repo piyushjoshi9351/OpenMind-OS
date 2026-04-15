@@ -83,8 +83,8 @@ export default function SkillGapPage() {
           <Select value={selectedGoal?.id ?? ''} onValueChange={setSelectedGoalId}>
             <SelectTrigger className="w-full md:w-72"><SelectValue placeholder="Choose goal" /></SelectTrigger>
             <SelectContent>
-              {goals.map((goal) => (
-                <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
+              {goals.map((goal, index) => (
+                <SelectItem key={`goal-option-${goal.id}-${goal.userId}-${index}`} value={goal.id}>{goal.title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -95,21 +95,21 @@ export default function SkillGapPage() {
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle className="font-headline text-lg">Required Skills</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {analysis.requiredSkills.map((skill) => <Badge key={skill} variant="secondary" className="mr-2 mb-2">{skill}</Badge>)}
+            {analysis.requiredSkills.map((skill, index) => <Badge key={`required-skill-${skill}-${index}`} variant="secondary" className="mr-2 mb-2">{skill}</Badge>)}
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle className="font-headline text-lg">Current Skills</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {analysis.existingSkills.length ? analysis.existingSkills.map((skill) => <Badge key={skill} className="mr-2 mb-2">{skill}</Badge>) : <p className="text-sm text-muted-foreground">No skill nodes yet.</p>}
+            {analysis.existingSkills.length ? analysis.existingSkills.map((skill, index) => <Badge key={`existing-skill-${skill}-${index}`} className="mr-2 mb-2">{skill}</Badge>) : <p className="text-sm text-muted-foreground">No skill nodes yet.</p>}
           </CardContent>
         </Card>
 
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle className="font-headline text-lg">Missing Skills</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {analysis.missingSkills.length ? analysis.missingSkills.map((skill) => <Badge key={skill} variant="destructive" className="mr-2 mb-2">{skill}</Badge>) : <p className="text-sm text-emerald-600">No critical gaps detected.</p>}
+            {analysis.missingSkills.length ? analysis.missingSkills.map((skill, index) => <Badge key={`missing-skill-${skill}-${index}`} variant="destructive" className="mr-2 mb-2">{skill}</Badge>) : <p className="text-sm text-emerald-600">No critical gaps detected.</p>}
           </CardContent>
         </Card>
       </div>
@@ -125,7 +125,7 @@ export default function SkillGapPage() {
             <Progress value={analysis.gapPercentage} className="h-2" />
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            {analysis.recommendations.map((item) => <li key={item}>• {item}</li>)}
+            {analysis.recommendations.map((item, index) => <li key={`recommendation-${item.slice(0, 40)}-${index}`}>• {item}</li>)}
           </ul>
         </CardContent>
       </Card>

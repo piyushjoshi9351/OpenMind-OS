@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,6 +16,7 @@ app = FastAPI(
     title="OpenMind OS Cognitive Engine",
     description="Backend for OpenMind OS personal cognitive twin platform",
     version="0.1.0",
+    lifespan=None,
 )
 
 app.add_middleware(
@@ -27,7 +30,11 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-@app.on_event("startup")
-def warmup_embedding_model() -> None:
+@asynccontextmanager
+async def app_lifespan(_: FastAPI):
     if settings.preload_embedding_model and not settings.enable_ml_stubs:
         embedding_service.warmup_model()
+    yield
+
+
+app.router.lifespan_context = app_lifespan

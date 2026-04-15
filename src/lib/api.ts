@@ -68,6 +68,25 @@ export interface MLInsightsResult {
   recommended_actions: string[];
 }
 
+export interface GoalPredictionResult {
+  completion_probability: number;
+  model_name: string;
+  confidence_score?: number;
+  factors: Record<string, number>;
+  normalized_factors?: Record<string, number>;
+}
+
+export interface SimulationResult {
+  risk_factor: number;
+  opportunity_cost: 'low' | 'medium' | 'high';
+  estimated_months: number;
+  success_probability: number;
+  confidence_interval_low: number;
+  confidence_interval_high: number;
+  simulation_runs: number;
+  recommended_strategy: string;
+}
+
 export const api = {
   async healthcheck() {
     const response = await fetch(`${API_V1_BASE}/health`, { method: 'GET' });
@@ -149,7 +168,7 @@ export const api = {
     return response.json();
   },
 
-  async predictGoal(features: GoalPredictionFeatures & { userId: string }): Promise<{ completionProbability: number }> {
+  async predictGoal(features: GoalPredictionFeatures & { userId: string }): Promise<GoalPredictionResult | null> {
     const response = await fetch(`${API_V1_BASE}/prediction/goal`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -163,11 +182,38 @@ export const api = {
     });
 
     if (!response.ok) {
-      return { completionProbability: 0 };
+      return null;
     }
 
-    const data = await response.json();
-    return { completionProbability: Number(data.completion_probability ?? 0) };
+    return response.json();
+  },
+
+  async simulateScenario(input: {
+    userId: string;
+    scenario: string;
+    consistencyScore?: number;
+    delayRatio?: number;
+    completionVelocity?: number;
+    activeHours?: number;
+  }): Promise<SimulationResult | null> {
+    const response = await fetch(`${API_V1_BASE}/simulation/scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: input.userId,
+        scenario: input.scenario,
+        consistency_score: input.consistencyScore,
+        delay_ratio: input.delayRatio,
+        completion_velocity: input.completionVelocity,
+        active_hours: input.activeHours,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json();
   },
 
   async getMLInsights(input: MLInsightsPayload): Promise<MLInsightsResult | null> {

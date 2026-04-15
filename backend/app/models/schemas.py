@@ -7,6 +7,7 @@ class HealthResponse(BaseModel):
     dependencies: dict[str, str] = Field(default_factory=dict)
     embedding: dict[str, object] = Field(default_factory=dict)
     memory: dict[str, object] = Field(default_factory=dict)
+    ml: dict[str, object] = Field(default_factory=dict)
 
 
 class MemoryIngestRequest(BaseModel):
@@ -71,12 +72,21 @@ class GoalOptimizeResponse(BaseModel):
 class SimulationRequest(BaseModel):
     user_id: str
     scenario: str
+    consistency_score: float | None = Field(default=None, ge=0, le=100)
+    delay_ratio: float | None = Field(default=None, ge=0, le=1)
+    completion_velocity: float | None = Field(default=None, ge=0)
+    active_hours: float | None = Field(default=None, ge=0)
 
 
 class SimulationResponse(BaseModel):
     risk_factor: float
     opportunity_cost: str
     estimated_months: int
+    success_probability: float
+    confidence_interval_low: float
+    confidence_interval_high: float
+    simulation_runs: int
+    recommended_strategy: str
 
 
 class EventTrackRequest(BaseModel):
@@ -150,7 +160,9 @@ class GoalPredictionRequest(BaseModel):
 class GoalPredictionResponse(BaseModel):
     completion_probability: float
     model_name: str
+    confidence_score: float | None = None
     factors: dict[str, float]
+    normalized_factors: dict[str, float] = Field(default_factory=dict)
 
 
 class MLInsightsRequest(BaseModel):

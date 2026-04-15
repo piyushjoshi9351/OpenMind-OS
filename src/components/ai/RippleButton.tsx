@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface RippleButtonProps extends React.ComponentProps<typeof Button> {
   rippleClassName?: string;
@@ -10,12 +10,14 @@ interface RippleButtonProps extends React.ComponentProps<typeof Button> {
 
 export function RippleButton({ className, children, rippleClassName, onClick, ...props }: RippleButtonProps) {
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const rippleSequenceRef = useRef(0);
 
   const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const id = Date.now();
+    rippleSequenceRef.current += 1;
+    const id = Date.now() * 1000 + rippleSequenceRef.current;
     setRipples((current) => [...current, { id, x, y }]);
     window.setTimeout(() => {
       setRipples((current) => current.filter((item) => item.id !== id));

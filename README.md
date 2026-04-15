@@ -71,6 +71,37 @@ uvicorn app.main:app --reload --port 8000
 2. Copy `backend/.env.example` to `backend/.env`
 3. Fill Firebase values and service credentials
 
+## AI/ML Production Setup
+
+1. In `backend/.env`, set:
+	- `ENABLE_ML_STUBS=false`
+	- `PRELOAD_EMBEDDING_MODEL=true`
+2. Train and persist goal prediction model:
+	- `cd backend`
+	- `.venv\Scripts\python scripts/train_goal_model.py`
+	- optional real data: `.venv\Scripts\python scripts/train_goal_model.py --dataset data/training/my_goal_training_data.csv --report-out data/training/goal_model_validation_report.json`
+3. Start backend and verify runtime status:
+	- `uvicorn app.main:app --reload --port 8000`
+	- open `http://127.0.0.1:8000/api/v1/health`
+
+`/api/v1/health` now reports dependency health plus active embedding and goal-prediction model status.
+
+CI now validates frontend type/lint/build, backend tests, backend container build, and model-training artifact generation.
+
+## Deployment Quality Gates
+
+Run full deployment checks locally:
+
+```bash
+npm run predeploy:all
+```
+
+This enforces:
+
+- frontend lint + typecheck + production build
+- backend model training artifact generation
+- backend predeploy artifact/metric validation
+
 ## Open Source Roadmap (next)
 
 - Sentence Transformer embedding pipeline

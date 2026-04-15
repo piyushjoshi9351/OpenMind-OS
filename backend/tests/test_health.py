@@ -15,3 +15,4 @@ def test_health_endpoint() -> None:
     assert "dependencies" in body
     assert "embedding" in body
     assert "memory" in body
+    assert "ml" in body

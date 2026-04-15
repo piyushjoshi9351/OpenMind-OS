@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { GuidedEmptyState } from '@/components/dashboard/GuidedEmptyState';
 import { DataFreshnessIndicator } from '@/components/dashboard/DataFreshnessIndicator';
 import { ErrorFallbackState } from '@/components/dashboard/ErrorFallbackState';
-import { useCognitiveAnalytics, useIntelligenceAddons, useMemoryAssistant, useRealtimeGoals, useRealtimeGraph, useRealtimeTasks } from '@/lib/hooks';
+import { useCognitiveAnalytics, useIntelligenceAddons, useLiveMLSignals, useMemoryAssistant, useRealtimeGoals, useRealtimeGraph, useRealtimeTasks } from '@/lib/hooks';
 import { useFirestore, useUser } from '@/firebase';
 import { trackFeatureEvent } from '@/lib/event-tracking';
 import { api } from '@/lib/api';
@@ -73,6 +73,7 @@ export default function Dashboard() {
   const { tasks, loading: tasksLoading, error: tasksError } = useRealtimeTasks();
   const { graphData } = useRealtimeGraph();
   const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
+  const liveML = useLiveMLSignals(goals, tasks, dashboardSnapshot, advancedAnalytics);
   const intelligence = useIntelligenceAddons(goals, tasks, energy);
   const { assistant, loading: memoryLoading } = useMemoryAssistant(goals, tasks);
   const goalVelocityRef = useRef<{ avgProgress: number; at: number } | null>(null);
@@ -354,8 +355,8 @@ export default function Dashboard() {
                   <CardTitle className="text-sm uppercase tracking-[0.2em] text-primary">Goal Streams</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {goals.slice(0, 4).map((goal) => (
-                    <div key={goal.id} className="space-y-2">
+                  {goals.slice(0, 4).map((goal, index) => (
+                    <div key={`goal-stream-${goal.id}-${goal.userId}-${index}`} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="truncate max-w-[70%]">{goal.title}</span>
                         <span className="text-primary">{goal.progress}%</span>
@@ -489,6 +490,41 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            <Card className="om-card-secondary inner-shadow-panel micro-tilt">
+              <CardHeader>
+                <CardTitle className="text-sm uppercase tracking-[0.2em] text-primary">Live ML Forecast</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Target role</span>
+                  <span className="text-cyan-300 font-semibold">{liveML.targetRole}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Prediction</span>
+                  <span className="text-primary font-semibold">{liveML.prediction ? `${liveML.prediction.completionProbability.toFixed(1)}%` : '--'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Confidence</span>
+                  <span className="text-emerald-300 font-semibold">{liveML.prediction ? `${liveML.prediction.confidenceScore.toFixed(1)}%` : '--'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Success range</span>
+                  <span className="text-amber-300 font-semibold">
+                    {liveML.simulation
+                      ? `${liveML.simulation.confidenceLow.toFixed(0)}-${liveML.simulation.confidenceHigh.toFixed(0)}%`
+                      : '--'}
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  {liveML.loading
+                    ? 'Syncing ML model output...'
+                    : liveML.error
+                      ? 'ML runtime offline. Local heuristics active.'
+                      : liveML.insights?.recommendedActions[0] ?? 'Model runtime healthy.'}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className={dashboardSnapshot.burnoutRisk > 60 ? 'om-card-passive warning-vibrate inner-shadow-panel micro-tilt' : 'om-card-passive inner-shadow-panel micro-tilt'}>
               <CardContent className="p-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2 text-primary mb-2"><Sparkles className="h-4 w-4" /> AI Insight</div>
@@ -508,7 +544,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {intelligence.smartPlan.items.length ? intelligence.smartPlan.items.map((item, index) => (
-                  <div key={item.taskId} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div key={`smart-plan-${item.taskId}-${item.goalId}-${index}`} className="rounded-xl border border-white/10 bg-black/20 p-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                       <span>Block {index + 1}</span>
                       <span>{Math.round(item.estimatedMinutes / 60)}h • Score {item.score}</span>
@@ -591,8 +627,8 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {intelligence.goalRisks.length ? intelligence.goalRisks.map((risk) => (
-                  <div key={risk.goalId} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                {intelligence.goalRisks.length ? intelligence.goalRisks.map((risk, index) => (
+                  <div key={`goal-risk-${risk.goalId}-${risk.goalTitle.slice(0, 24)}-${index}`} className="rounded-xl border border-white/10 bg-black/20 p-3">
                     <div className="flex items-center justify-between text-sm">
                       <p className="font-medium truncate max-w-[75%]">{risk.goalTitle}</p>
                       <Badge className={risk.riskLevel === 'High' ? 'bg-rose-500/20 text-rose-200 border-rose-400/30' : risk.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-200 border-amber-400/30' : 'bg-emerald-500/20 text-emerald-200 border-emerald-400/30'}>{risk.riskLevel}</Badge>
@@ -639,9 +675,9 @@ export default function Dashboard() {
                 <CardTitle className="text-sm uppercase tracking-[0.2em] text-primary">Live Activity Feed</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {recentActivity.length ? recentActivity.map((item) => (
+                {recentActivity.length ? recentActivity.map((item, index) => (
                   <motion.div
-                    key={item.id}
+                    key={`recent-${item.id}-${item.goalId}-${index}`}
                     whileHover={{ scale: 1.02, x: 4 }}
                     className="rounded-xl border border-white/10 bg-black/20 p-3"
                   >

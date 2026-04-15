@@ -1,0 +1,18 @@
+{
+  "dataset_source": "data\\training\\sample_goal_training_data.csv",
+  "model_version": "goal_predictor_v2",
+  "artifact_path": "app\\data\\goal_prediction_model.json",
+  "metrics": {
+    "sample_count": 62,
+    "train_size": 49,
+    "validation_size": 13,
+    "roc_auc": 1.0,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "accuracy": 1.0,
+    "brier_score": 0.027374299494476888,
+    "log_loss": 0.1287744941961406,
+    "ece": 0.1118880602547206
+  }
+}

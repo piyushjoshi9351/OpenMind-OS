@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFirestore, useUser } from '@/firebase';
 import { goalService } from '@/services';
-import { useRealtimeGoals } from '@/lib/hooks';
+import { useCognitiveAnalytics, useLiveMLSignals, useRealtimeGoals, useRealtimeTasks } from '@/lib/hooks';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { uxCopy } from '@/lib/ux-copy';
@@ -35,6 +35,9 @@ export default function GoalsPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const { goals, loading, error } = useRealtimeGoals();
+  const { tasks } = useRealtimeTasks();
+  const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
+  const liveML = useLiveMLSignals(goals, tasks, dashboardSnapshot, advancedAnalytics);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -119,6 +122,37 @@ export default function GoalsPage() {
 
       <Card className="om-card">
         <CardHeader>
+          <CardTitle className="font-headline text-lg">AI/ML Runtime Forecast</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Model</p>
+            <p className="font-semibold truncate">{liveML.prediction?.modelName ?? 'local-fallback'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Completion Forecast</p>
+            <p className="font-semibold">{liveML.prediction ? `${liveML.prediction.completionProbability.toFixed(1)}%` : '--'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Confidence</p>
+            <p className="font-semibold">{liveML.prediction ? `${liveML.prediction.confidenceScore.toFixed(1)}%` : '--'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">AI Readiness</p>
+            <p className="font-semibold">{liveML.insights ? `${liveML.insights.readinessScore.toFixed(1)}%` : '--'}</p>
+          </div>
+          <div className="col-span-2 md:col-span-4 text-xs text-muted-foreground">
+            {liveML.loading
+              ? 'Syncing real-time model outputs...'
+              : liveML.error
+                ? 'ML backend not reachable. Showing local values only.'
+                : liveML.insights?.recommendedActions[0] ?? 'Model signals healthy and ready.'}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="om-card">
+        <CardHeader>
           <CardTitle className="font-headline text-xl">Goal Creation Wizard</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -167,8 +201,8 @@ export default function GoalsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {activeGoals.map((goal) => (
-          <Card key={goal.id} className="om-card">
+        {activeGoals.map((goal, index) => (
+          <Card key={`goal-card-${goal.id}-${goal.userId}-${index}`} className="om-card">
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
               <div className="space-y-1">
                 <Badge variant={goal.priority === 'High' ? 'destructive' : 'outline'} className="mb-2">
@@ -207,10 +241,18 @@ export default function GoalsPage() {
                 </div>
                 <Progress value={goal.progress} className="h-2" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Completion probability: {goal.completionProbability}%</span>
-                  <span>Skill gap: {goal.skillGapScore}%</span>
+                  <span>
+                    Completion probability: {liveML.prediction ? `${liveML.prediction.completionProbability.toFixed(1)}%` : `${goal.completionProbability}%`}
+                  </span>
+                  <span>Skill gap: {liveML.insights ? `${liveML.insights.riskScore.toFixed(1)} risk` : `${goal.skillGapScore}%`}</span>
                 </div>
               </div>
+
+              {liveML.simulation && (
+                <div className="rounded-lg border border-border/50 p-2 text-xs text-muted-foreground">
+                  Scenario success range: {liveML.simulation.confidenceLow.toFixed(0)}-{liveML.simulation.confidenceHigh.toFixed(0)}% over ~{liveML.simulation.estimatedMonths} months.
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -77,7 +77,7 @@ def test_ml_insights_analyze_returns_expected_shape() -> None:
 
     assert data["user_id"] == user_id
     assert data["target_role"] == "ai_engineer"
-    assert data["model_name"] == "python_ml_fusion_v1"
+    assert data["model_name"].startswith("python_ml_fusion_v2::")
 
     assert 0 <= data["ai_readiness_score"] <= 100
     assert 0 <= data["execution_score"] <= 100
