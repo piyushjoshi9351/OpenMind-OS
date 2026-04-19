@@ -14,6 +14,7 @@ from app.models.schemas import (
 )
 from app.core.config import get_settings
 from app.services.embedding_service import embedding_service
+from app.db.neo4j import get_graph_service
 
 
 @dataclass
@@ -128,6 +129,31 @@ class MemoryService:
             vector=vector,
         )
         self._save_memory(item)
+        
+        # Also store in Neo4j knowledge graph
+        try:
+            graph_service = get_graph_service()
+            graph_service.create_knowledge_node(
+                node_id=node_id,
+                content=payload.content,
+                category=payload.node_type,
+                embedding=vector,
+                metadata={"user_id": payload.user_id, "created_from": "memory_ingest"}
+            )
+            
+            # Create relationships to related nodes
+            for related_id in related_node_ids:
+                graph_service.create_relationship(
+                    source_id=node_id,
+                    target_id=related_id,
+                    relationship_type="RELATED_TO",
+                    properties={"strength": 0.74}
+                )
+        except Exception as e:
+            # Log but don't fail if Neo4j is unavailable
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to store knowledge in Neo4j: {e}")
 
         strength_score = max(10.0, min(99.0, 35.0 + len(payload.content.strip()) * 0.8))
         return MemoryIngestResponse(
