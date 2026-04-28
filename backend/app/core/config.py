@@ -1,14 +1,20 @@
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import List
 
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Explicitly load .env file from backend directory
+_backend_dir = Path(__file__).parent.parent.parent
+_env_file = _backend_dir / ".env"
+load_dotenv(_env_file, override=True)
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
 
     backend_env: str = Field(default="development", alias="BACKEND_ENV")
     backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")
