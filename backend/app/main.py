@@ -5,8 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app.api.router import api_router
+from app.database import init_db
 from app.core.config import get_settings
 from app.core.logging import setup_logging
+from app.routers.goals import router as goals_router
+from app.routers.health import router as health_router
 from app.services.embedding_service import embedding_service
 
 
@@ -29,6 +32,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(health_router)
+app.include_router(goals_router)
 
 
 @app.get("/", include_in_schema=False)
@@ -38,6 +43,7 @@ def root() -> RedirectResponse:
 
 @asynccontextmanager
 async def app_lifespan(_: FastAPI):
+    init_db()
     if settings.preload_embedding_model and not settings.enable_ml_stubs:
         embedding_service.warmup_model()
     yield

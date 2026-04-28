@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     backend_cors_origins: str = Field(default="http://localhost:9002", alias="BACKEND_CORS_ORIGINS")
 
     postgres_url: str = Field(default="postgresql+psycopg://openmind:openmind@localhost:5432/openmind", alias="POSTGRES_URL")
+    goal_sqlite_path: str = Field(default="./.cache/openmind_goals.sqlite3", alias="GOAL_SQLITE_PATH")
 
     neo4j_uri: str = Field(default="bolt://localhost:7687", alias="NEO4J_URI")
     neo4j_username: str = Field(default="neo4j", alias="NEO4J_USERNAME")
