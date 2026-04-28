@@ -28,7 +28,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expi
 
 
 def init_db() -> None:
-    from app.goal_models import Goal
+    from app import chat_models, goal_models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
