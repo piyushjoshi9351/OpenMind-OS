@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import ai, behavior, chat, cognitive, events, health, memory, ml_insights, optimizer, prediction, simulation, skill_gap, goals_search
+from app.api.v1.endpoints import ai, behavior, chat, cognitive, events, health, memory, ml_insights, optimizer, prediction, simulation, skill_gap, goals_search, knowledge_graph
 
 
 v1_router = APIRouter()
@@ -17,3 +17,4 @@ v1_router.include_router(skill_gap.router, prefix="/skill-gap", tags=["skill-gap
 v1_router.include_router(simulation.router, prefix="/simulation", tags=["simulation"])
 v1_router.include_router(ml_insights.router, prefix="/ml-insights", tags=["ml-insights"])
 v1_router.include_router(goals_search.router, tags=["goals-search"])
+v1_router.include_router(knowledge_graph.router, tags=["knowledge-graph"])
