@@ -18,7 +18,7 @@ from app.core.config import get_settings
 
 
 SYSTEM_PROMPT = "You are a personal AI assistant helping students achieve their goals"
-MODEL_NAME = "gemini-pro"  # Using gemini-pro instead of gemini-1.5-flash
+MODEL_NAME = "gemini-2.5-flash"  # Latest model with full capability
 
 
 @dataclass
