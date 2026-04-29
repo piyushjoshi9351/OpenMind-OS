@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { 
   Bell,
+  Bot,
   Brain,
   LayoutDashboard, 
   Target, 
@@ -30,6 +31,7 @@ const navSections = [
     items: [
       { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { name: 'Intelligence', href: '/insights', icon: Brain },
+      { name: 'Chat', href: '/chat', icon: Bot },
     ],
   },
   {

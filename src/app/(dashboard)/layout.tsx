@@ -25,7 +25,7 @@ export default function DashboardLayout({
     ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(163,107,255,0.16),transparent_36%)]'
     : pathname.startsWith('/analytics')
       ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(92,210,146,0.15),transparent_36%)]'
-    : pathname.startsWith('/tasks') || pathname.startsWith('/goals') || pathname.startsWith('/roadmap') || pathname.startsWith('/dashboard')
+    : pathname.startsWith('/tasks') || pathname.startsWith('/goals') || pathname.startsWith('/roadmap') || pathname.startsWith('/dashboard') || pathname.startsWith('/chat')
       ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(88,154,255,0.17),transparent_36%)]'
       : pathname.startsWith('/graph')
         ? 'bg-[radial-gradient(circle_at_62%_14%,rgba(86,216,236,0.15),transparent_36%)]'

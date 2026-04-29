@@ -1,7 +1,63 @@
 import type { GoalModel, SkillGapAnalysis } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_ML_API_URL ?? 'http://localhost:8000';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 const API_V1_BASE = `${API_BASE_URL}/api/v1`;
+
+async function requestJson<TResponse>(path: string, init?: RequestInit & { expectJson?: boolean }): Promise<TResponse> {
+  const headers = new Headers(init?.headers);
+  headers.set('Content-Type', 'application/json');
+
+  const response = await fetch(`${API_V1_BASE}${path}`, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  if (init?.expectJson === false || response.status === 204) {
+    return undefined as TResponse;
+  }
+
+  return response.json() as Promise<TResponse>;
+}
+
+export interface BackendGoal {
+  id: number;
+  title: string;
+  description: string | null;
+  status: 'pending' | 'in_progress' | 'done';
+  created_at: string;
+}
+
+export interface CreateGoalPayload {
+  title: string;
+  description?: string | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversation_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+export interface ChatHistoryResponse {
+  conversation_id: string;
+  messages: ChatMessage[];
+}
+
+export interface ChatSendPayload {
+  message: string;
+  conversationId?: string;
+}
+
+export interface ChatSendResponse {
+  conversation_id: string;
+  assistant_message: string;
+}
 
 export interface RoadmapRequest {
   userId: string;
@@ -88,6 +144,10 @@ export interface SimulationResult {
 }
 
 export const api = {
+  getBaseUrl() {
+    return API_BASE_URL;
+  },
+
   async healthcheck() {
     const response = await fetch(`${API_V1_BASE}/health`, { method: 'GET' });
     if (!response.ok) {
@@ -300,5 +360,47 @@ export const api = {
     }
 
     return response.json();
+  },
+
+  async listGoals(): Promise<BackendGoal[]> {
+    return requestJson<BackendGoal[]>('/goals', { method: 'GET' });
+  },
+
+  async createGoal(payload: CreateGoalPayload): Promise<BackendGoal> {
+    return requestJson<BackendGoal>('/goals', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: payload.title,
+        description: payload.description ?? null,
+      }),
+    });
+  },
+
+  async deleteGoal(goalId: number): Promise<void> {
+    await requestJson<void>(`/goals/${goalId}`, { method: 'DELETE', expectJson: false });
+  },
+
+  async sendChatMessage(payload: ChatSendPayload): Promise<ChatSendResponse> {
+    return requestJson<ChatSendResponse>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: payload.message,
+        conversation_id: payload.conversationId ?? null,
+      }),
+    });
+  },
+
+  async getChatHistory(conversationId: string): Promise<ChatHistoryResponse | null> {
+    const response = await fetch(`${API_V1_BASE}/chat/${conversationId}`, { method: 'GET' });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    return response.json() as Promise<ChatHistoryResponse>;
   },
 };

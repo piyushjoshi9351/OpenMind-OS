@@ -1,71 +1,65 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Plus, RefreshCw, Sparkles, Target, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { GuidedEmptyState } from '@/components/dashboard/GuidedEmptyState';
-import { Plus, Target, Calendar, MoreVertical, Trash2, Edit2, Archive } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useFirestore, useUser } from '@/firebase';
-import { goalService } from '@/services';
-import { useCognitiveAnalytics, useLiveMLSignals, useRealtimeGoals, useRealtimeTasks } from '@/lib/hooks';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { uxCopy } from '@/lib/ux-copy';
-import type { GoalCategory, GoalPriority } from '@/types';
-
-const categories: GoalCategory[] = ['Career', 'Health', 'Learning', 'Personal', 'Financial'];
-const priorities: GoalPriority[] = ['Low', 'Medium', 'High'];
+import { api, type BackendGoal } from '@/lib/api';
 
 export default function GoalsPage() {
   const router = useRouter();
-  const firestore = useFirestore();
-  const { user } = useUser();
   const { toast } = useToast();
-  const { goals, loading, error } = useRealtimeGoals();
-  const { tasks } = useRealtimeTasks();
-  const { dashboardSnapshot, advancedAnalytics } = useCognitiveAnalytics(goals, tasks);
-  const liveML = useLiveMLSignals(goals, tasks, dashboardSnapshot, advancedAnalytics);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [category, setCategory] = useState<GoalCategory>('Career');
-  const [priority, setPriority] = useState<GoalPriority>('Medium');
+  const [goals, setGoals] = useState<BackendGoal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeGoals = useMemo(() => goals.filter((goal) => goal.status !== 'Archived'), [goals]);
+  const loadGoals = useCallback(async () => {
+    setError(null);
+    setRefreshing(true);
+    try {
+      const items = await api.listGoals();
+      setGoals(items);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load goals.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadGoals();
+  }, [loadGoals]);
 
   const createGoal = async () => {
-    if (!user || !title || !deadline) {
+    if (!title.trim()) {
       return;
     }
+
     setSubmitting(true);
     try {
-      await goalService.create(firestore, {
-        userId: user.uid,
-        title,
-        description,
-        category,
-        deadline,
-        priority,
+      await api.createGoal({
+        title: title.trim(),
+        description: description.trim() || null,
       });
       setTitle('');
       setDescription('');
-      setDeadline('');
-      toast({ title: uxCopy.success.created('Goal'), description: 'Your adaptive goal is now tracked.' });
+      await loadGoals();
+      toast({ title: uxCopy.success.created('Goal'), description: 'Goal saved through FastAPI.' });
     } catch (createError) {
       toast({ title: 'Goal creation failed', description: createError instanceof Error ? createError.message : uxCopy.error.retry, variant: 'destructive' });
     } finally {
@@ -73,25 +67,11 @@ export default function GoalsPage() {
     }
   };
 
-  const archiveGoal = async (goalId: string) => {
-    if (!user) {
-      return;
-    }
+  const removeGoal = async (goalId: number) => {
     try {
-      await goalService.archive(firestore, user.uid, goalId);
-      toast({ title: uxCopy.success.archived('Goal'), description: 'Goal moved to archive successfully.' });
-    } catch (archiveError) {
-      toast({ title: 'Archive failed', description: archiveError instanceof Error ? archiveError.message : uxCopy.error.retry, variant: 'destructive' });
-    }
-  };
-
-  const deleteGoal = async (goalId: string) => {
-    if (!user) {
-      return;
-    }
-    try {
-      await goalService.remove(firestore, user.uid, goalId);
-      toast({ title: 'Goal deleted', description: 'Goal removed permanently.' });
+      await api.deleteGoal(goalId);
+      await loadGoals();
+      toast({ title: uxCopy.success.archived('Goal'), description: 'Goal removed from backend.' });
     } catch (deleteError) {
       toast({ title: 'Delete failed', description: deleteError instanceof Error ? deleteError.message : uxCopy.error.retry, variant: 'destructive' });
     }
@@ -108,167 +88,112 @@ export default function GoalsPage() {
   }
 
   if (error) {
-    return <div className="max-w-7xl mx-auto text-sm text-destructive">{error}</div>;
+    return (
+      <div className="max-w-7xl mx-auto space-y-4">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+        <Button onClick={() => void loadGoals()} variant="outline">Try Again</Button>
+      </div>
+    );
   }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title="Goals & Objectives"
-        subtitle="Track your long-term vision and progress."
-        primaryAction={<Button onClick={createGoal} disabled={submitting || !title || !deadline}><Plus className="h-4 w-4 mr-1" /> Create Goal</Button>}
-        secondaryAction={<Badge variant="outline">{activeGoals.length} Active</Badge>}
+        subtitle="Real goals load from FastAPI now, not from hardcoded demo data."
+        primaryAction={<Button onClick={() => void loadGoals()} variant="outline" disabled={refreshing}><RefreshCw className="h-4 w-4 mr-1" /> Refresh</Button>}
+        secondaryAction={<Badge variant="outline">{goals.length} Goals</Badge>}
       />
 
       <Card className="om-card">
         <CardHeader>
-          <CardTitle className="font-headline text-lg">AI/ML Runtime Forecast</CardTitle>
+          <CardTitle className="font-headline text-lg">Backend Connected</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Model</p>
-            <p className="font-semibold truncate">{liveML.prediction?.modelName ?? 'local-fallback'}</p>
+        <CardContent className="grid gap-3 text-sm md:grid-cols-3">
+          <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+            <p className="text-xs text-muted-foreground">Backend URL</p>
+            <p className="mt-1 truncate font-semibold">{api.getBaseUrl()}</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Completion Forecast</p>
-            <p className="font-semibold">{liveML.prediction ? `${liveML.prediction.completionProbability.toFixed(1)}%` : '--'}</p>
+          <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+            <p className="text-xs text-muted-foreground">Connection</p>
+            <p className="mt-1 font-semibold text-emerald-400">Live API</p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Confidence</p>
-            <p className="font-semibold">{liveML.prediction ? `${liveML.prediction.confidenceScore.toFixed(1)}%` : '--'}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">AI Readiness</p>
-            <p className="font-semibold">{liveML.insights ? `${liveML.insights.readinessScore.toFixed(1)}%` : '--'}</p>
-          </div>
-          <div className="col-span-2 md:col-span-4 text-xs text-muted-foreground">
-            {liveML.loading
-              ? 'Syncing real-time model outputs...'
-              : liveML.error
-                ? 'ML backend not reachable. Showing local values only.'
-                : liveML.insights?.recommendedActions[0] ?? 'Model signals healthy and ready.'}
+          <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+            <p className="text-xs text-muted-foreground">Data Source</p>
+            <p className="mt-1 font-semibold">GET /api/v1/goals</p>
           </div>
         </CardContent>
       </Card>
 
       <Card className="om-card">
         <CardHeader>
-          <CardTitle className="font-headline text-xl">Goal Creation Wizard</CardTitle>
+          <CardTitle className="font-headline text-xl">Create Goal</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-2 space-y-2">
+        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-1">
             <Label htmlFor="goal-title">Goal title</Label>
             <Input id="goal-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Become a Staff AI Engineer" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-category">Category</Label>
-            <Select value={category} onValueChange={(value) => setCategory(value as GoalCategory)}>
-              <SelectTrigger id="goal-category"><SelectValue /></SelectTrigger>
-              <SelectContent>{categories.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-priority">Priority</Label>
-            <Select value={priority} onValueChange={(value) => setPriority(value as GoalPriority)}>
-              <SelectTrigger id="goal-priority"><SelectValue /></SelectTrigger>
-              <SelectContent>{priorities.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="goal-deadline">Deadline</Label>
-            <Input id="goal-deadline" type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} />
-          </div>
-          <div className="lg:col-span-4 space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="goal-description">Description</Label>
             <Input id="goal-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Map milestones and expected outcomes..." />
           </div>
-          <Button variant="outline" onClick={createGoal} disabled={submitting || !title || !deadline} className="h-10 mt-auto">
-            <Plus className="h-4 w-4 mr-1" /> Create Goal
-          </Button>
+          <div className="md:col-span-2 flex flex-wrap gap-3">
+            <Button variant="outline" onClick={() => void loadGoals()} disabled={refreshing}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Refresh List
+            </Button>
+            <Button onClick={() => void createGoal()} disabled={submitting || !title.trim()}>
+              <Plus className="h-4 w-4 mr-1" /> Create Goal
+            </Button>
+          </div>
+          <p className="md:col-span-2 text-xs text-muted-foreground">
+            Submit the form and the list refreshes from the backend immediately.
+          </p>
         </CardContent>
       </Card>
 
-      {!activeGoals.length && (
+      {!goals.length && (
         <GuidedEmptyState
           title="No goals yet"
-          description="Start with one high-impact goal. This unlocks task planning, risk prediction, and personalized insights."
-          primaryLabel="Create First Goal"
-          onPrimaryAction={createGoal}
+          description="Create your first goal above. The card list below is powered by the backend API."
+          primaryLabel="Focus Form"
+          onPrimaryAction={() => document.getElementById('goal-title')?.focus()}
           secondaryLabel="Open Roadmap"
           onSecondaryAction={() => router.push('/roadmap')}
-          icon={<Target className="h-5 w-5" />}
+          icon={<Sparkles className="h-5 w-5" />}
         />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {activeGoals.map((goal, index) => (
-          <Card key={`goal-card-${goal.id}-${goal.userId}-${index}`} className="om-card">
+        {goals.map((goal) => (
+          <Card key={goal.id} className="om-card">
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <div className="space-y-1">
-                <Badge variant={goal.priority === 'High' ? 'destructive' : 'outline'} className="mb-2">
-                  {goal.priority} Priority
+              <div className="space-y-2">
+                <Badge variant="outline" className="w-fit capitalize">
+                  {goal.status.replace('_', ' ')}
                 </Badge>
                 <CardTitle className="font-headline text-xl">{goal.title}</CardTitle>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="gap-2">
-                    <Edit2 className="h-4 w-4" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2" onClick={() => archiveGoal(goal.id)}>
-                    <Archive className="h-4 w-4" /> Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2 text-destructive" onClick={() => deleteGoal(goal.id)}>
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="ghost" size="icon" onClick={() => void removeGoal(goal.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {goal.description}
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground line-clamp-3">
+                {goal.description || 'No description provided.'}
               </p>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Overall Progress</span>
-                  <span className="text-muted-foreground">{goal.progress}%</span>
-                </div>
-                <Progress value={goal.progress} className="h-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>
-                    Completion probability: {liveML.prediction ? `${liveML.prediction.completionProbability.toFixed(1)}%` : `${goal.completionProbability}%`}
-                  </span>
-                  <span>Skill gap: {liveML.insights ? `${liveML.insights.riskScore.toFixed(1)} risk` : `${goal.skillGapScore}%`}</span>
-                </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Target className="h-4 w-4" />
+                <span>Created: {new Date(goal.created_at).toLocaleString()}</span>
               </div>
-
-              {liveML.simulation && (
-                <div className="rounded-lg border border-border/50 p-2 text-xs text-muted-foreground">
-                  Scenario success range: {liveML.simulation.confidenceLow.toFixed(0)}-{liveML.simulation.confidenceHigh.toFixed(0)}% over ~{liveML.simulation.estimatedMonths} months.
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Due: {goal.deadline}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Target className="h-4 w-4" />
-                  <span>{goal.category}</span>
-                </div>
+              <div className="rounded-lg border border-border/60 bg-background/70 p-3 text-xs text-muted-foreground">
+                This card is rendered from real backend data, not hardcoded samples.
               </div>
             </CardContent>
           </Card>
         ))}
 
-        <button className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-muted hover:border-primary/50 transition-colors group" onClick={createGoal}>
+        <button className="flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed border-muted hover:border-primary/50 transition-colors group" onClick={() => document.getElementById('goal-title')?.focus()}>
           <div className="bg-muted p-3 rounded-full group-hover:bg-primary/10 transition-colors">
             <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary" />
           </div>

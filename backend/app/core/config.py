@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     backend_env: str = Field(default="development", alias="BACKEND_ENV")
     backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")
     backend_port: int = Field(default=8000, alias="BACKEND_PORT")
-    backend_cors_origins: str = Field(default="http://localhost:9002", alias="BACKEND_CORS_ORIGINS")
+    backend_cors_origins: str = Field(default="http://localhost:3000,http://localhost:9002", alias="BACKEND_CORS_ORIGINS")
 
     postgres_url: str = Field(default="postgresql+psycopg://openmind:openmind@localhost:5432/openmind", alias="POSTGRES_URL")
     goal_sqlite_path: str = Field(default="./.cache/openmind_goals.sqlite3", alias="GOAL_SQLITE_PATH")
