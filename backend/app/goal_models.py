@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import CheckConstraint, DateTime, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -30,3 +30,5 @@ class Goal(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    # Embedding vector stored as JSON (list of floats) in a TEXT column for SQLite
+    embedding: Mapped[str | None] = mapped_column(Text, nullable=True)

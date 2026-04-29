@@ -25,3 +25,14 @@ class GoalResponse(BaseModel):
     description: str | None
     status: GoalStatus
     created_at: datetime
+
+
+class GoalSearchResult(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    description: str | None
+    status: GoalStatus
+    created_at: datetime
+    score: float

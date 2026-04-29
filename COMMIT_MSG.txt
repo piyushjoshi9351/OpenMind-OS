@@ -1,0 +1,6 @@
+feat: Hugging Face embeddings + semantic search
+
+- Added embedding column to Goal model
+- Save embeddings on goal creation
+- Added semantic search endpoints (/goals/search, /api/v1/goals/search)
+- Health endpoint reports embedding model status
