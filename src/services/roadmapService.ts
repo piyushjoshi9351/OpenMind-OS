@@ -68,7 +68,7 @@ export interface RoadmapListResult {
   hasMore: boolean;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_ML_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export const roadmapService = {
   /**

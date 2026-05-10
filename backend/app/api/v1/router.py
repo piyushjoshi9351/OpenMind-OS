@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import ai, behavior, chat, cognitive, events, health, memory, ml_insights, optimizer, prediction, simulation, skill_gap, goals_search, knowledge_graph
+from app.routers.goals import router as goals_router
 
 
 v1_router = APIRouter()
 v1_router.include_router(health.router, tags=["health"])
 v1_router.include_router(chat.router, prefix="/chat", tags=["chat"])
+v1_router.include_router(goals_router, tags=["goals"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(memory.router, prefix="/memory", tags=["memory"])
 v1_router.include_router(events.router, prefix="/events", tags=["events"])

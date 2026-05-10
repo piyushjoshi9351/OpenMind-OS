@@ -432,7 +432,7 @@ export function GoalTracker() {
 async function safeAPICall(endpoint, options) {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ML_API_URL}${endpoint}`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}${endpoint}`,
       options
     );
     

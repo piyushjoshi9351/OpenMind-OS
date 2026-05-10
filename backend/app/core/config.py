@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Explicitly load .env file from backend directory
 _backend_dir = Path(__file__).parent.parent.parent
 _env_file = _backend_dir / ".env"
-load_dotenv(_env_file, override=True)
+load_dotenv(_env_file, override=False)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     backend_env: str = Field(default="development", alias="BACKEND_ENV")
     backend_host: str = Field(default="0.0.0.0", alias="BACKEND_HOST")
     backend_port: int = Field(default=8000, alias="BACKEND_PORT")
-    backend_cors_origins: str = Field(default="http://localhost:3000,http://localhost:9002", alias="BACKEND_CORS_ORIGINS")
+    # Comma-separated list or JSON array of allowed origins for CORS.
+    # Include your frontend dev host(s) and production domain(s) here.
+    backend_cors_origins: str = Field(default="http://localhost:3000,http://localhost:9002,https://your-frontend.com", alias="BACKEND_CORS_ORIGINS")
 
     postgres_url: str = Field(default="postgresql+psycopg://openmind:openmind@localhost:5432/openmind", alias="POSTGRES_URL")
     goal_sqlite_path: str = Field(default="./.cache/openmind_goals.sqlite3", alias="GOAL_SQLITE_PATH")
